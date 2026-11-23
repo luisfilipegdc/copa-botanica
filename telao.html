@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Telão · Copa Botânica</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌳</text></svg>">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="/icones/favicon-32.png">
 <link rel="apple-touch-icon" href="/icones/apple-touch-icon.png">
@@ -17,43 +16,87 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="estilo.css">
 <style>
-  body { overflow-x: hidden; }
-  .tela { min-height: 100vh; display: flex; flex-direction: column; padding: 18px 28px 90px; gap: 18px; position: relative; z-index: 1; }
-  .topo { display: flex; align-items: center; gap: 16px; }
-  .topo .marca { font-size: 1.5rem; }
-  .topo .info { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
-  .selo { background: #ffffff14; border: 1px solid #ffffff26; padding: 6px 14px; border-radius: 999px; font-weight: 800; }
+  /* telão: ocupa a tela inteira, tudo cresce com o tamanho da janela */
+  html { font-size: clamp(14px, 1.05vw + 4px, 26px); }
+  .tela { height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto 1fr; padding: 1.2vh 1.6vw calc(4.2rem + 1vh); gap: 1.4vh; position: relative; z-index: 1; overflow: hidden; }
+  .corpo { min-height: 0; display: flex; flex-direction: column; gap: 1.4vh; overflow: auto; scrollbar-width: thin; }
+  .topo { display: flex; align-items: center; gap: 1rem; }
+  .topo .info { margin-left: auto; display: flex; gap: .5rem; flex-wrap: wrap; justify-content: flex-end; }
+  .selo { background: #ffffff14; border: 1px solid #ffffff26; padding: .3rem .8rem; border-radius: 999px; font-weight: 800; white-space: nowrap; }
   .selo b { color: var(--sol); }
-  .controles { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 10px; padding: 12px 20px; background: #0b2316ee; backdrop-filter: blur(6px); border-top: 1px solid #ffffff1f; z-index: 10; flex-wrap: wrap; align-items: center; }
-  .controles .btn { width: auto; padding: 12px 18px; font-size: 1rem; }
+  .controles { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: .6rem; padding: .6rem 1.2vw; background: #0b2316f0; backdrop-filter: blur(6px); border-top: 1px solid #ffffff1f; z-index: 10; flex-wrap: wrap; align-items: center; transition: transform .25s, opacity .25s; }
+  .controles .btn { width: auto; min-height: 0; padding: .6rem 1.1rem; font-size: 1rem; }
   .controles.oculto { transform: translateY(100%); opacity: 0; }
-  .controles .dica { margin-left: auto; color: #ffffff66; font-size: .85rem; }
-  .lobby { display: grid; grid-template-columns: minmax(280px, 420px) 1fr; gap: 28px; flex: 1; align-items: start; }
-  .qr { background: var(--creme); color: var(--tinta); border-radius: 24px; padding: 20px; text-align: center; }
+  .controles .dica { margin-left: auto; color: #ffffff66; font-size: .8rem; }
+  .grupo { display: flex; gap: .3rem; align-items: center; background: #ffffff10; border-radius: 999px; padding: .2rem .3rem .2rem .8rem; font-weight: 800; }
+  .grupo button { background: transparent; color: var(--papel); padding: .35rem .8rem; border-radius: 999px; font-weight: 800; }
+  .grupo button.on { background: var(--polen); color: #3a2a00; }
+
+  /* lobby */
+  .lobby { flex: 1; display: grid; grid-template-columns: minmax(0, 36vh) 1fr; gap: 2.5vw; align-items: stretch; min-height: 0; }
+  .qr { background: var(--creme); color: var(--tinta); border-radius: 24px; padding: 2vh; text-align: center; display: flex; flex-direction: column; justify-content: center; }
   .qr img { width: 100%; image-rendering: pixelated; border-radius: 8px; }
-  .codigo { font-family: 'Fredoka'; font-size: 4rem; letter-spacing: 10px; color: var(--fundo2); line-height: 1; margin-top: 8px; }
-  .nuvem { display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; }
-  .nuvem .chip { font-size: 1.15rem; padding: 10px 16px; cursor: pointer; animation: surge .5s cubic-bezier(.2,1.4,.4,1) both; }
+  .codigo { font-family: 'Fredoka'; font-size: 4.2rem; letter-spacing: .6rem; color: var(--fundo2); line-height: 1; margin-top: .6vh; }
+  .lado-lobby { display: flex; flex-direction: column; gap: 1.6vh; min-height: 0; }
+  .nuvem { display: flex; flex-wrap: wrap; gap: .6rem; align-content: flex-start; overflow: auto; }
+  .nuvem .chip { font-size: 1.1rem; padding: .5rem .9rem; cursor: pointer; animation: surge .5s cubic-bezier(.2,1.4,.4,1) both; }
   .nuvem .chip:hover { background: var(--erro); text-decoration: line-through; }
   .contador { font-family: 'Fredoka'; font-size: 5rem; color: var(--sol); line-height: 1; }
-  .grade-duelos { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
-  .grade-duelos.mini { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; font-size: .9rem; }
-  .cd { background: #ffffff12; border: 1px solid #ffffff22; border-radius: 14px; padding: 10px 14px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
+
+  /* grade de duelos: o tamanho acompanha a quantidade */
+  .grade { display: grid; gap: 1vh 1vw; grid-template-columns: repeat(var(--col, 4), minmax(0, 1fr)); align-content: start; }
+  .cd { background: #ffffff12; border: 1px solid #ffffff22; border-radius: 6px 18px 6px 18px; padding: .7em .9em; display: grid; grid-template-columns: 1fr auto 1fr; gap: .5em; align-items: center; font-size: var(--fs, 1rem); }
   .cd .n { font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .cd .n.dir { text-align: right; }
-  .cd .pl { font-family: 'Fredoka'; color: var(--sol); font-size: 1.2rem; white-space: nowrap; }
+  .cd .pl { font-family: 'Fredoka'; color: var(--sol); font-size: 1.3em; white-space: nowrap; }
   .cd .perdeu { opacity: .35; text-decoration: line-through; }
   .cd .ganhou { color: var(--folha-clara); }
-  .pergunta-telao { font-size: clamp(1.3rem, 2.3vw, 2.2rem); line-height: 1.35; white-space: pre-line; }
-  .ops-telao { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .ops-telao .op { font-size: clamp(1rem, 1.6vw, 1.5rem); padding: 18px; position: relative; overflow: hidden; cursor: default; }
+  .cd .ok { color: var(--broto); }
+  .cd .sub { grid-column: 1 / -1; font-size: .78em; color: #ffffffaa; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-top: 1px dashed #ffffff22; padding-top: .4em; }
+  .cd.decidido { opacity: .55; }
+  /* grade que estica até o fim da tela: cartões maiores quando há poucos duelos */
+  .grade.encher { flex: 1; grid-auto-rows: minmax(0, 1fr); align-content: stretch; max-height: 100%; }
+  .grade.encher .cd { font-size: calc(var(--fs) * 1.15); align-content: center; grid-template-columns: 1fr 1fr; row-gap: .3em; }
+  .grade.encher .cd .pl { order: -1; grid-column: 1 / -1; text-align: center; font-size: 1.7em; }
+  .grade.encher .cd .sub { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .cq .certa .t { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .grade-q.compacta .txt { -webkit-line-clamp: 2; } .grade-q.compacta .certa .t { -webkit-line-clamp: 2; } .grade-q.compacta .cq { padding: .7em .9em; gap: .35em; }
+
+  /* pergunta */
+  .relogio { display: flex; align-items: center; gap: 1.2vw; }
+  .relogio .barra-tempo { flex: 1; height: 1.2rem; }
+  .relogio .gigante { font-size: 4.5rem; min-width: 2ch; }
+  .gigante { font-family: 'Fredoka'; font-size: clamp(3rem, 12vh, 9rem); color: var(--sol); line-height: 1; text-align: center; }
+
+  /* revelação: cartões das perguntas da etapa */
+  .grade-q { display: grid; gap: 1.2vh 1vw; grid-template-columns: repeat(var(--colq, 3), minmax(0, 1fr)); align-content: start; }
+  .cq { background: var(--creme); color: var(--tinta); border-radius: 6px 20px 6px 20px; padding: 1em 1.1em; cursor: pointer; display: flex; flex-direction: column; gap: .5em; text-align: left; font-size: var(--fsq, 1rem); transition: transform .1s; }
+  .cq:hover { transform: translateY(-3px); box-shadow: 0 0 0 4px var(--polen); }
+  .cq .txt { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35; }
+  .cq .certa { background: #e9f3dc; border-left: 5px solid var(--samambaia); padding: .4em .6em; border-radius: 4px 12px 4px 12px; font-weight: 800; }
+  .cq .rodape-q { display: flex; align-items: center; gap: .6em; margin-top: auto; }
+  .cq .pct { font-family: 'Fredoka'; font-size: 1.8em; line-height: 1; }
+  .cq .pct.baixo { color: var(--erro); } .cq .pct.medio { color: #c98a00; } .cq .pct.alto { color: #2b8a4e; }
+  .cq .quem { margin-left: auto; font-size: .8em; color: var(--suave); text-align: right; }
+
+  /* pergunta aberta em tela cheia para o professor explicar */
+  .foco { display: grid; grid-template-rows: auto auto 1fr auto; gap: 1.6vh; min-height: 0; flex: 1; }
+  .pergunta-telao { font-size: clamp(1.2rem, 2.1vw + .4vh, 2.4rem); line-height: 1.35; white-space: pre-line; }
+  .ops-telao { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vh 1vw; align-content: start; }
+  .ops-telao .op { font-size: clamp(1rem, 1.35vw + .3vh, 1.7rem); padding: 1.6vh 1.2vw; position: relative; overflow: hidden; cursor: default; min-height: 0; }
   .ops-telao .op .pct { position: absolute; left: 0; bottom: 0; height: 6px; background: #ffffffcc; }
-  .ops-telao .op .num { margin-left: auto; font-family: 'Fredoka'; padding-left: 10px; }
-  .gigante { font-family: 'Fredoka'; font-size: clamp(3rem, 9vw, 8rem); color: var(--sol); line-height: 1; text-align: center; }
-  .classificados { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
-  .classificados .cl { background: var(--creme); color: var(--tinta); border-radius: 16px; padding: 12px 18px; font-weight: 800; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; animation: surge .6s both; }
+  .ops-telao .op .num { margin-left: auto; font-family: 'Fredoka'; padding-left: .6em; }
+  .explica-telao { font-size: clamp(1.1rem, 1.4vw + .3vh, 1.8rem); }
+
+  .classificados { display: flex; flex-wrap: wrap; gap: .8rem; justify-content: center; }
+  .classificados .cl { background: var(--creme); color: var(--tinta); border-radius: 6px 18px 6px 18px; padding: .6rem 1rem; font-weight: 800; font-size: 1.2rem; display: flex; align-items: center; gap: .5rem; animation: surge .6s both; }
   .login { max-width: 460px; margin: 10vh auto; }
-  @media (max-width: 800px) { .lobby { grid-template-columns: 1fr; } .ops-telao { grid-template-columns: 1fr; } .tela { padding: 14px 16px 120px; } }
+  .login, .login * { font-size: 16px; }
+  .login h2 { font-size: 1.35rem; }
+  @media (max-width: 800px), (orientation: portrait) {
+    .tela { height: auto; min-height: 100vh; overflow: visible; }
+    .lobby { grid-template-columns: 1fr; } .ops-telao { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
@@ -63,8 +106,8 @@
 <script src="comum.js"></script>
 <script>
 // ======================================================================
-// O telão é o "juiz": guarda a chave, cronometra e corrige as respostas.
-// Tudo que os alunos veem é o estado público salvo no Supabase.
+// O telão é o "juiz": monta a chave, sorteia uma pergunta para cada dupla,
+// cronometra e corrige. Os alunos só veem o estado público salvo no Supabase.
 // ======================================================================
 const qs = new URLSearchParams(location.search);
 let SALA = (qs.get('sala') || '').toUpperCase();
@@ -72,17 +115,19 @@ let SEG = null;
 let E = null;                 // estado público do jogo
 let PERG = [], PMAP = {};     // perguntas com gabarito (só o telão tem)
 let JOG = {};                 // id -> segundos desde a última vez que o celular falou com o servidor
-let RESP = {};                // id -> [opção, ms] da pergunta atual
+let RESP = {};                // id -> [opção, ms] da etapa atual
+let FOCO = null;              // pergunta aberta em tela cheia na revelação
 let controlesOcultos = false, erroMsg = '';
 const raiz = document.getElementById('raiz');
 
 const PERGS_DUELO = 3, PERGS_FINAL = 5, EXTRAS = 2;
+const TEMPOS = [[1, 'Normal'], [1.5, '+50%'], [2, 'Dobro']];
 const iso = (t) => new Date(t).toISOString();
 const embaralhar = (a) => { for (let i = a.length - 1; i > 0; i--) { const k = Math.floor(Math.random() * (i + 1)); [a[i], a[k]] = [a[k], a[i]]; } return a; };
 
 // ---------------- entrada do professor ----------------
 function telaLogin(msg) {
-  let ultima = null; try { ultima = JSON.parse(localStorage.getItem('tb_host_ultima') || 'null'); } catch (e) {}
+  let ultima = ''; try { ultima = (localStorage.getItem('tb_host_ultima') || '').replace(/[^A-Z0-9]/g, ''); } catch (e) {}
   raiz.innerHTML = `<div class="app login">
     ${MARCA}<p class="claro" style="margin:0">Telão do professor</p>
     <div class="cartao">
@@ -91,7 +136,7 @@ function telaLogin(msg) {
       <input class="campo" id="senha" type="password" placeholder="Senha do professor">
       <p class="erro-msg">${esc(msg || '')}</p>
       <button class="btn" id="criar">Criar sala 🌱</button>
-      ${ultima ? `<button class="btn sec" style="margin-top:10px;color:var(--tinta);border-color:#0002" onclick="location.search='?sala=${esc(ultima)}'">Voltar para a sala ${esc(ultima)}</button>` : ''}
+      ${ultima && ultima !== SALA ? `<button class="btn sec" style="margin-top:10px;color:var(--tinta);border-color:#0002" onclick="location.search='?sala=${ultima}'">↩️ Voltar para a sala ${ultima}</button>` : ''}
       <p class="suave pequeno" style="margin-top:14px">📖 <a href="manual"><b>Manual de uso</b></a> · 📝 <a href="perguntas">Banco de perguntas</a></p>
     </div></div>`;
   const criar = async () => {
@@ -164,22 +209,56 @@ function montarRodada() {
   E.duelos = duelos;
   E.rodada = (E.rodada || 0) + 1;
   E.k = (duelos.length === 1 && !passe) ? PERGS_FINAL : PERGS_DUELO;
-  E.q_num = 0; E.q = null; E.revelacao = null; E.ref = null;
+  E.q_num = 0; E.qs = null; E.atrib = null; E.revelacao = null; E.ref = null;
   E.fase = 'chave';
 }
 
-// ---------------- perguntas ----------------
-function prepararPergunta() {
-  let pool = PERG.filter((q) => !(E.usadas || []).includes(q.id));
-  if (!pool.length) { E.usadas = []; pool = PERG.slice(); erroMsg = 'Todas as perguntas já saíram: recomeçando o banco.'; }
-  const q = pool[Math.floor(Math.random() * pool.length)];
-  E.usadas = [...(E.usadas || []), q.id];
-  E.morte_subita = E.q_num >= E.k;
-  E.ref = `${E.rodada}-${E.q_num}-${q.id}-${Math.random().toString(36).slice(2, 7)}`;
-  E.q = { id: q.id, tema: q.tema, texto: q.texto, opcoes: q.opcoes };
+// ---------------- perguntas: uma para cada dupla ----------------
+function tempoDe(q) {
   const letras = q.texto.length + q.opcoes.join('').length;
-  E.tempo = Math.round(Math.max(20, Math.min(60, 12 + letras / 20)));
-  E.revelacao = null; E.respondidos = []; RESP = {};
+  return Math.max(30, Math.min(90, 25 + letras / 15));
+}
+// escolhe a pergunta menos usada que ninguém do grupo viu; se o banco acabar, repete o mínimo possível
+function escolherPergunta(jaViram, naEtapa) {
+  const tenta = (filtro) => PERG.filter(filtro);
+  let cand = tenta((q) => !jaViram.has(q.id) && !naEtapa.has(q.id));
+  if (!cand.length) cand = tenta((q) => !jaViram.has(q.id));
+  if (!cand.length) cand = PERG.slice();
+  const uso = E.uso || {};
+  const menor = Math.min(...cand.map((q) => uso[q.id] || 0));
+  cand = cand.filter((q) => (uso[q.id] || 0) === menor);
+  return cand[Math.floor(Math.random() * cand.length)];
+}
+function prepararPergunta() {
+  E.vis = E.vis || {}; E.uso = E.uso || {};
+  E.morte_subita = E.q_num >= E.k;
+  const qsEtapa = {}, atrib = {}, naEtapa = new Set();
+  const viu = (id) => new Set(E.vis[id] || []);
+  const usar = (q) => {
+    if (!qsEtapa[q.id]) {
+      const ordem = embaralhar(q.opcoes.map((_, i) => i));   // alternativas sorteadas a cada vez
+      qsEtapa[q.id] = { id: q.id, tema: q.tema, texto: q.texto, opcoes: ordem.map((i) => q.opcoes[i]), ordem };
+      naEtapa.add(q.id); E.uso[q.id] = (E.uso[q.id] || 0) + 1;
+    }
+    return q.id;
+  };
+  // 1) cada duelo em disputa ganha a sua pergunta
+  for (const d of E.duelos.filter((x) => x.b && !x.w)) {
+    const q = escolherPergunta(new Set([...viu(d.a), ...viu(d.b)]), naEtapa);
+    atrib[d.a] = atrib[d.b] = usar(q);
+  }
+  // 2) torcida e quem já decidiu: uma das perguntas da etapa que ainda não viu (vale pólen)
+  const daEtapa = Object.keys(qsEtapa).map(Number);
+  for (const [id] of ativos()) {
+    if (atrib[id]) continue;
+    const v = viu(id), livres = daEtapa.filter((qid) => !v.has(qid));
+    atrib[id] = livres.length ? livres[Math.floor(Math.random() * livres.length)] : usar(escolherPergunta(v, naEtapa));
+  }
+  for (const [id, qid] of Object.entries(atrib)) E.vis[id] = [...(E.vis[id] || []), qid];
+  E.qs = qsEtapa; E.atrib = atrib;
+  E.tempo = Math.round(Math.max(...Object.keys(qsEtapa).map((qid) => tempoDe(PMAP[qid]))) * (E.cfg?.tempo || 1));
+  E.ref = `${E.rodada}-${E.q_num}-${Math.random().toString(36).slice(2, 8)}`;
+  E.revelacao = null; E.respondidos = []; RESP = {}; FOCO = null;
   E.fase = 'preparar'; E.prep_fim = iso(agoraSrv() + 3500);
 }
 function comecarPergunta() {
@@ -198,25 +277,35 @@ async function lerRespostas() {
   }
 }
 function todosResponderam() {
-  const c = conectados();
+  const c = conectados().filter((id) => E.atrib && E.atrib[id]);
   return c.length > 0 && agoraSrv() - ms(E.q_inicio) > 3000 && c.every((id) => RESP[id]);
 }
 async function encerrarPergunta() {
   await lerRespostas();
-  const q = PMAP[E.q.id], certa = q.resposta, total = E.tempo * 1000;
-  const stats = q.opcoes.map(() => 0);
+  const total = E.tempo * 1000, rev = {};
+  for (const [qid, q] of Object.entries(E.qs)) {
+    const P = PMAP[qid];
+    rev[qid] = { correta: q.ordem.indexOf(P.resposta), explicacao: P.explicacao || '', stats: q.opcoes.map(() => 0), total: 0, acertos: 0, quem: 0 };
+  }
+  const acertou = (id) => { const r = RESP[id], qid = E.atrib[id]; return !!r && !!qid && r[0] === rev[qid].correta; };
   for (const [id, p] of ativos()) {
-    const r = RESP[id];
-    if (r) stats[r[0]] = (stats[r[0]] || 0) + 1;
-    if (r && r[0] === certa) {
+    const qid = E.atrib[id]; if (!qid) { p.g = 0; continue; }
+    const r = RESP[id], rv = rev[qid];
+    rv.quem++;
+    if (r) { rv.total++; rv.stats[r[0]] = (rv.stats[r[0]] || 0) + 1; p.nr = (p.nr || 0) + 1; }
+    p.ms = r ? r[1] : null;                       // tempo de resposta (feedback de velocidade)
+    p.ok = r ? (acertou(id) ? 1 : 0) : null;      // o adversário vê se você acertou
+    if (acertou(id)) {
+      rv.acertos++;
       p.g = 100 + Math.round(50 * Math.max(0, 1 - r[1] / total));
       p.p += p.g; p.a += 1; p.s = (p.s || 0) + 1;
+      p.sm = Math.max(p.sm || 0, p.s);            // maior sequência (conquista no final)
+      p.mm = Math.min(p.mm || 1e9, r[1]);         // acerto mais rápido (conquista no final)
     } else { p.g = 0; p.s = 0; }
   }
   for (const d of E.duelos) {
     if (d.w || !d.b) continue;
-    const ra = RESP[d.a], rb = RESP[d.b];
-    const ca = !!ra && ra[0] === certa, cb = !!rb && rb[0] === certa;
+    const ra = RESP[d.a], rb = RESP[d.b], ca = acertou(d.a), cb = acertou(d.b);
     if (E.morte_subita) {
       if (ca && cb) { if (ra[1] <= rb[1]) d.pa++; else d.pb++; }
       else if (ca) d.pa++; else if (cb) d.pb++;
@@ -225,10 +314,11 @@ async function encerrarPergunta() {
       if (cb) { d.pb++; d.tb += rb[1]; }
     }
   }
-  E.revelacao = { correta: certa, explicacao: q.explicacao || '', stats, total: Object.keys(RESP).length };
+  E.revelacao = rev;
   E.respondidos = Object.keys(RESP);
-  E.fase = 'revelacao';
-  E.rev_fim = iso(agoraSrv() + Math.max(9000, Math.min(18000, 6000 + (q.explicacao || '').length * 45)));
+  E.fase = 'revelacao';             // fica aqui até o professor clicar em "Próxima"
+  const qids = Object.keys(rev);
+  FOCO = qids.length === 1 ? qids[0] : null;
   som('certo');
 }
 function avancar() {
@@ -254,6 +344,7 @@ function fimRodada() {
   }
   E.ordem = venc;
   E.historico = [...(E.historico || []), E.duelos.map((d) => [d.a, d.b, d.w, d.pa, d.pb])];
+  E.qs = null; E.atrib = null; FOCO = null;
   if (venc.length <= 1) { E.campeao = venc[0] || null; E.fase = 'campeao'; som('fanfarra'); setTimeout(() => confete(10), 300); }
   else { E.fase = 'fim_rodada'; som('fanfarra'); }
 }
@@ -270,7 +361,7 @@ async function tick() {
     else if (E.fase === 'pergunta') {
       if (t - ultResp > 1000) await lerRespostas();
       if (t >= ms(E.q_fim) + 800 || todosResponderam()) { await encerrarPergunta(); await salvar(); }
-    } else if (E.fase === 'revelacao' && !E.pausado && t >= ms(E.rev_fim)) { avancar(); await salvar(); }
+    }
   } catch (e) { erroMsg = e.message; }
   ocupado = false;
   desenhar();
@@ -283,13 +374,14 @@ async function acao(nome, arg) {
   try {
     if (nome === 'fechar') {
       await sincJogadores();
-      if (vivos().length < 2) { alert('Precisa de pelo menos 2 alunos na sala.'); return; }
+      if (vivos().length < 2) { erroMsg = 'Precisa de pelo menos 2 alunos na sala.'; return; }
       montarRodada();
     }
+    if (nome === 'tempo') { E.cfg = { ...(E.cfg || {}), tempo: +arg }; }
     if (nome === 'comecar') prepararPergunta();
     if (nome === 'encerrar' && E.fase === 'pergunta') await encerrarPergunta();
     if (nome === 'proxima' && E.fase === 'revelacao') avancar();
-    if (nome === 'pausar') E.pausado = !E.pausado;
+    if (nome === 'foco') { FOCO = arg || null; return; }
     if (nome === 'rodada') montarRodada();
     if (nome === 'remover') {
       const p = E.j[arg];
@@ -306,6 +398,7 @@ document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT') return;
   if (e.key === 'h' || e.key === 'H') { controlesOcultos = !controlesOcultos; desenhar(); }
   if (e.key === 'f' || e.key === 'F') document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+  if (e.key === 'Escape' && FOCO) acao('foco', null);
 });
 
 // ---------------- desenho ----------------
@@ -315,12 +408,30 @@ function qrImg() {
   catch (e) { return `<p style="font-size:1.4rem;word-break:break-all">${esc(linkAluno())}</p>`; }
 }
 let qrCache = '';
-function cartaoDuelo(d, mini) {
+// colunas e tamanho de letra conforme a quantidade de cartões (aproveita a tela toda)
+function escala(n) {
+  if (n <= 1) return { col: 1, fs: '2.2rem' };
+  if (n <= 2) return { col: 2, fs: '1.9rem' };
+  if (n <= 4) return { col: 2, fs: '1.6rem' };
+  if (n <= 6) return { col: 3, fs: '1.35rem' };
+  if (n <= 9) return { col: 3, fs: '1.15rem' };
+  if (n <= 12) return { col: 4, fs: '1.05rem' };
+  if (n <= 20) return { col: 5, fs: '.95rem' };
+  return { col: 6, fs: '.85rem' };
+}
+function cartaoDuelo(d, comPergunta) {
   const A = E.j[d.a] || { n: '?' }, B = d.b ? (E.j[d.b] || { n: '?' }) : null;
   const cls = (id) => (d.w ? (d.w === id ? 'ganhou' : 'perdeu') : '');
-  if (!B) return `<div class="cd"><span class="n ${cls(d.a)}">${estagio(A.e).e} ${esc(curto(A.n))}</span><span class="pl">🌰</span><span class="n dir suave" style="color:#ffffff88">passe livre</span></div>`;
-  return `<div class="cd"><span class="n ${cls(d.a)}">${estagio(A.e).e} ${esc(curto(A.n))}</span>
-    <span class="pl">${d.pa} × ${d.pb}</span><span class="n dir ${cls(d.b)}">${esc(curto(B.n))} ${estagio(B.e).e}</span></div>`;
+  const resp = (id) => (comPergunta && (E.respondidos || []).includes(id) ? ' <span class="ok">✓</span>' : '');
+  if (!B) return `<div class="cd"><span class="n ${cls(d.a)}">${estagio(A.e).e} ${esc(curto(A.n))}</span><span class="pl">🌰</span><span class="n dir" style="color:#ffffff88">passe livre</span></div>`;
+  const q = comPergunta && E.atrib && E.qs ? E.qs[E.atrib[d.a]] : null;
+  return `<div class="cd ${comPergunta && d.w ? 'decidido' : ''}"><span class="n ${cls(d.a)}">${estagio(A.e).e} ${esc(curto(A.n))}${resp(d.a)}</span>
+    <span class="pl">${d.pa} × ${d.pb}</span><span class="n dir ${cls(d.b)}">${resp(d.b)}${esc(curto(B.n))} ${estagio(B.e).e}</span>
+    ${q && !d.w ? `<span class="sub">🌿 ${esc(q.tema)} · ${esc(q.texto.slice(0, 90))}…</span>` : ''}${comPergunta && d.w ? '<span class="sub">✔ duelo decidido · respondendo por pólen</span>' : ''}</div>`;
+}
+function grade(itens, cartao, encher) {
+  const s = escala(itens.length);
+  return `<div class="grade ${encher ? 'encher' : ''}" style="--col:${s.col};--fs:${s.fs}">${itens.map(cartao).join('')}</div>`;
 }
 
 function desenhar() {
@@ -337,81 +448,108 @@ function desenhar() {
   if (f === 'lobby') {
     if (!qrCache) qrCache = qrImg();
     const nomes = ativos().map(([id, p]) => `<span class="chip" data-remover="${id}" title="Clique para remover">🌱 ${esc(p.n)}</span>`).join('');
+    const tempoAtual = E.cfg?.tempo || 1;
     corpo = `<div class="lobby">
       <div class="qr">${qrCache}
-        <p style="margin:6px 0 0;font-weight:800">Aponte a câmera do celular</p>
-        <p class="suave" style="margin:2px 0">ou entre em <b>${esc(location.host)}</b> com o código</p>
+        <p style="margin:.6vh 0 0;font-weight:800">Aponte a câmera do celular</p>
+        <p class="suave" style="margin:.2vh 0">ou entre em <b>${esc(location.host)}</b> com o código</p>
         <div class="codigo">${SALA}</div></div>
-      <div>
-        <div class="logo-grande" style="flex-direction:row;gap:18px;margin-bottom:12px">${LOGO}<div><h1 style="font-size:3rem">Copa Botânica</h1><small style="font-size:1.1rem">Marista Asa Sul · 2026</small></div></div>
-        <div style="display:flex;align-items:baseline;gap:14px"><span class="contador">${nJog}</span><h2>botânico${nJog === 1 ? '' : 's'} na arena</h2></div>
-        <p class="claro" style="font-size:1.2rem">Cada vitória = uma novidade evolutiva: 🌱 musgo › 🌿 samambaia › 🌲 pinheiro › 🌸 flor › 🍎 fruto</p>
+      <div class="lado-lobby">
+        <div class="logo-grande" style="flex-direction:row;gap:1.2vw;align-items:center">${LOGO}<div><h1 style="font-size:3.2rem">Copa Botânica</h1><small style="font-size:1.1rem">Marista Asa Sul · 2026</small></div></div>
+        <div style="display:flex;align-items:baseline;gap:1rem"><span class="contador">${nJog}</span><h2 style="font-size:1.6rem">botânico${nJog === 1 ? '' : 's'} na arena</h2></div>
+        <p class="claro" style="font-size:1.15rem;margin:0">Cada vitória = uma novidade evolutiva: 🌱 musgo › 🌿 samambaia › 🌲 pinheiro › 🌸 flor › 🍎 fruto</p>
         <div class="nuvem">${nomes || '<p class="suave" style="color:#ffffff88">Esperando o primeiro aluno…</p>'}</div>
       </div></div>`;
     botoes = `<button class="btn" data-acao="fechar">🌿 Fechar sala e sortear duelos (${nJog})</button>
+      <span class="grupo">⏱️ Tempo ${TEMPOS.map(([v, r]) => `<button class="${tempoAtual === v ? 'on' : ''}" data-acao="tempo" data-arg="${v}">${r}</button>`).join('')}</span>
       <span class="suave pequeno" style="color:#ffffff88">Clique num nome para remover · ${PERG.length} perguntas no banco</span>`;
   } else if (f === 'chave') {
     const rep = E.evento && E.evento.tipo === 'repescagem' ? E.j[E.evento.id] : null;
-    corpo = `<div class="centro"><h1 style="font-size:2.6rem">${E.k === PERGS_FINAL ? '🏆 GRANDE FINAL' : `Rodada ${E.rodada}`}</h1>
-      <p class="claro" style="font-size:1.2rem">${E.duelos.filter((d) => d.b).length} duelo(s) · melhor de ${E.k} · empate = morte súbita ⚡</p>
+    corpo = `<div class="centro"><h1 style="font-size:2.8rem">${E.k === PERGS_FINAL ? '🏆 GRANDE FINAL' : `Rodada ${E.rodada}`}</h1>
+      <p class="claro" style="font-size:1.2rem;margin:.4vh 0">${E.duelos.filter((d) => d.b).length} duelo(s) · melhor de ${E.k} · cada dupla recebe a sua pergunta · empate = morte súbita ⚡</p>
       ${rep ? `<p class="fogo" style="font-size:1.3rem">🌱🌧️ REPESCAGEM: ${esc(rep.n)} rebrotou com ${rep.p} 🌼 e volta para a Copa!</p>` : ''}</div>
-      <div class="grade-duelos">${E.duelos.map((d) => cartaoDuelo(d)).join('')}</div>`;
+      ${grade(E.duelos, (d) => cartaoDuelo(d), true)}`;
     botoes = `<button class="btn" data-acao="comecar">▶ Começar rodada</button>`;
   } else if (f === 'preparar') {
     corpo = `<div style="flex:1;display:grid;place-items:center;text-align:center"><div>
-      <h1 style="font-size:3rem">${E.morte_subita ? '⚡ MORTE SÚBITA' : `Pergunta ${E.q_num + 1} de ${E.k}`}</h1>
+      <h1 style="font-size:3.4rem">${E.morte_subita ? '⚡ MORTE SÚBITA' : `Pergunta ${E.q_num + 1} de ${E.k}`}</h1>
+      <p class="claro" style="font-size:1.4rem">${E.morte_subita ? 'Só os duelos empatados valem: quem acertar (e mais rápido) leva.' : `${Object.keys(E.qs || {}).length} perguntas diferentes, uma para cada dupla. Olhem para o celular!`}</p>
       <div class="gigante" data-fim="${ms(E.prep_fim)}">3</div></div></div>`;
-  } else if (f === 'pergunta' || f === 'revelacao') {
-    const rv = f === 'revelacao' ? E.revelacao : null;
-    const nResp = f === 'pergunta' ? Object.keys(RESP).length : rv.total;
-    corpo = `<div style="display:flex;gap:12px;align-items:center">
-        <span class="tema">${esc(E.q.tema)}</span>${E.morte_subita ? '<span class="tema" style="background:var(--sol)">⚡ morte súbita</span>' : `<span class="selo">Pergunta <b>${E.q_num + 1}</b> de ${E.k}</span>`}
-        <span class="selo" style="margin-left:auto">✋ <b>${nResp}</b> de ${conectados().length || nJog} responderam</span>
-        ${f === 'pergunta' ? `<span class="gigante" style="font-size:3rem" data-fim="${ms(E.q_fim)}"></span>` : ''}</div>
-      ${f === 'pergunta' ? `<div class="barra-tempo" style="height:16px" data-ini="${ms(E.q_inicio)}" data-fim="${ms(E.q_fim)}"></div>` : ''}
-      <div class="pergunta-telao">${esc(E.q.texto)}</div>
-      <div class="ops-telao">${E.q.opcoes.map((t, i) => {
-        const pct = rv && rv.total ? Math.round(100 * (rv.stats[i] || 0) / rv.total) : 0;
-        return `<div class="op op${i} ${rv ? (i === rv.correta ? 'certa' : 'apagada') : ''}"><span class="letra">${LETRAS[i]}</span><span>${esc(t)}</span>
-          ${rv ? `<span class="num">${pct}%</span><span class="pct" style="width:${pct}%"></span>` : ''}</div>`;
-      }).join('')}</div>
-      ${rv && rv.explicacao ? `<div class="cartao" style="font-size:1.3rem"><b>🪴 Por quê?</b> ${esc(rv.explicacao)}</div>` : ''}
-      ${rv ? `<div class="grade-duelos mini">${E.duelos.filter((d) => d.b).map((d) => cartaoDuelo(d, true)).join('')}</div>` : ''}`;
-    botoes = f === 'pergunta'
-      ? `<button class="btn sec" data-acao="encerrar">⏹ Encerrar pergunta agora</button>`
-      : `<button class="btn" data-acao="proxima">⏭ Próxima</button>
-         <button class="btn sec" data-acao="pausar">${E.pausado ? '▶ Continuar sozinho' : '⏸ Pausar para explicar'}</button>
-         ${E.pausado ? '' : `<span class="selo">segue em <b data-fim="${ms(E.rev_fim)}"></b>s</span>`}`;
+  } else if (f === 'pergunta') {
+    const elegiveis = Object.keys(E.atrib || {}).length;
+    const emDisputa = E.duelos.filter((d) => d.b);
+    corpo = `<div class="relogio"><span class="tema" style="font-size:1rem">${E.morte_subita ? '⚡ morte súbita' : `Pergunta ${E.q_num + 1} de ${E.k}`}</span>
+        <div class="barra-tempo" data-ini="${ms(E.q_inicio)}" data-fim="${ms(E.q_fim)}"></div>
+        <span class="gigante" data-fim="${ms(E.q_fim)}"></span></div>
+      <div class="centro"><span class="selo" style="font-size:1.3rem">✋ <b>${Object.keys(RESP).length}</b> de ${elegiveis} responderam · cada dupla tem a sua pergunta no celular</span></div>
+      ${grade(emDisputa, (d) => cartaoDuelo(d, true), true)}`;
+    botoes = `<button class="btn sec" data-acao="encerrar">⏹ Encerrar pergunta agora</button>`;
+  } else if (f === 'revelacao') {
+    const rev = E.revelacao || {};
+    if (FOCO && rev[FOCO] && E.qs && E.qs[FOCO]) {
+      const q = E.qs[FOCO], rv = rev[FOCO];
+      const pctAcerto = rv.quem ? Math.round(100 * rv.acertos / rv.quem) : 0;
+      corpo = `<div class="foco">
+        <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap"><span class="tema" style="font-size:1rem">${esc(q.tema)}</span>
+          <span class="selo">🎯 <b>${pctAcerto}%</b> acertaram · ${rv.quem} receberam esta pergunta</span></div>
+        <div class="pergunta-telao">${esc(q.texto)}</div>
+        <div class="ops-telao">${q.opcoes.map((t, i) => {
+          const pct = rv.total ? Math.round(100 * (rv.stats[i] || 0) / rv.total) : 0;
+          return `<div class="op op${i} ${i === rv.correta ? 'certa' : 'apagada'}"><span class="letra">${LETRAS[i]}</span><span>${esc(t)}</span><span class="num">${pct}%</span><span class="pct" style="width:${pct}%"></span></div>`;
+        }).join('')}</div>
+        ${rv.explicacao ? `<div class="cartao explica-telao"><b>🪴 Por quê?</b> ${esc(rv.explicacao)}</div>` : ''}
+      </div>`;
+      botoes = (Object.keys(rev).length > 1 ? `<button class="btn sec" data-acao="foco">← Todas as perguntas</button>` : '');
+    } else {
+      // cartões das perguntas da etapa: a mais errada primeiro (é a que mais vale explicar)
+      const lista = Object.entries(rev).map(([qid, rv]) => ({ qid, rv, q: E.qs[qid], pct: rv.quem ? Math.round(100 * rv.acertos / rv.quem) : 0 }))
+        .sort((a, b) => a.pct - b.pct);
+      const s = escala(lista.length), colq = Math.min(4, Math.max(1, Math.ceil(s.col * 0.75)));
+      corpo = `<div class="centro"><h2 style="font-size:1.9rem">Respostas desta etapa</h2>
+          <p class="claro" style="margin:.3vh 0 0">Clique numa pergunta para abrir em tela cheia e explicar · a mais errada aparece primeiro</p></div>
+        <div class="grade-q ${lista.length > 3 ? 'compacta' : ''}" style="--colq:${colq};--fsq:${lista.length <= 2 ? '1.35rem' : lista.length <= 3 ? '1.1rem' : lista.length <= 6 ? '.92rem' : '.85rem'}">
+        ${lista.map(({ qid, rv, q, pct }) => `<button class="cq" data-acao="foco" data-arg="${qid}">
+            <span class="tema" style="align-self:flex-start">${esc(q.tema)}</span>
+            <span class="txt">${esc(q.texto)}</span>
+            <span class="certa"><span class="t">✔ ${LETRAS[rv.correta]}) ${esc(q.opcoes[rv.correta])}</span></span>
+            <span class="rodape-q"><span class="pct ${pct < 40 ? 'baixo' : pct < 70 ? 'medio' : 'alto'}">${pct}%</span><span>acertaram</span>
+              <span class="quem">${rv.quem} aluno${rv.quem === 1 ? '' : 's'}</span></span></button>`).join('')}</div>
+        <h3 style="margin-top:.6vh">⚔️ Placar dos duelos</h3>
+        ${grade(E.duelos.filter((d) => d.b), (d) => cartaoDuelo(d))}`;
+    }
+    botoes += `<button class="btn" data-acao="proxima">▶ Próxima pergunta</button>
+      <span class="suave pequeno" style="color:#ffffffaa">O jogo espera você: explique com calma e clique quando a turma estiver pronta.</span>`;
   } else if (f === 'fim_rodada') {
     const venc = E.duelos.map((d) => d.w).filter(Boolean);
     const s = estagio(Math.max(...venc.map((id) => E.j[id].e)));
     const torcida = ranking(E).filter((p) => !p.v && p.el).slice(0, 3);
-    corpo = `<div class="centro"><p class="claro" style="font-size:1.3rem;margin:0">Fim da rodada ${E.rodada}: ${venc.length} classificados evoluíram para</p>
-        <div class="avatar grande pulsa" style="margin:10px 0">${s.e}</div><h1 style="font-size:3rem">${s.nome}</h1>
-        <p style="font-size:1.5rem;font-weight:800">${s.ganho}</p></div>
+    corpo = `<div class="centro"><p class="claro" style="font-size:1.4rem;margin:0">Fim da rodada ${E.rodada}: ${venc.length} classificados evoluíram para</p>
+        <div class="avatar grande pulsa" style="margin:1vh 0;font-size:8rem">${s.e}</div><h1 style="font-size:3.4rem">${s.nome}</h1>
+        <p style="font-size:1.6rem;font-weight:800">${s.ganho}</p></div>
       <div class="classificados">${venc.map((id) => `<div class="cl">${estagio(E.j[id].e).e} ${esc(curto(E.j[id].n))}</div>`).join('')}</div>
       ${venc.length % 2 === 1 && torcida.length ? `<p class="centro claro" style="font-size:1.2rem">Número ímpar! Quem lidera a torcida volta na repescagem: ${torcida.map((p) => `<b>${esc(curto(p.n))}</b> (${p.p} 🌼)`).join(' · ')}</p>` : ''}`;
     botoes = `<button class="btn" data-acao="rodada">🌱 Sortear próxima rodada</button>`;
   } else if (f === 'campeao') {
-    const c = E.j[E.campeao] || { n: '—', p: 0 }, rk = ranking(E).slice(0, 10);
-    corpo = `<div class="centro"><div class="avatar grande pulsa">🏆</div>
-        <p class="claro" style="font-size:1.4rem;margin:0">Campeão Botânico</p><h1 style="font-size:4rem">${esc(c.n)}</h1>
-        <p style="font-size:1.3rem">${c.p} 🌼 de pólen · ${c.a} acertos</p></div>
-      <div class="cartao" style="max-width:720px;margin:0 auto;width:100%"><h2 style="margin-bottom:10px">🌼 Ranking de pólen (todo mundo que jogou)</h2>
-        <ol class="lista-rank">${rk.map((p, i) => `<li style="background:#0f2e1d0d"><span class="pos">${i + 1}º</span><span>${estagio(p.e).e} ${esc(p.n)}</span><span class="pts" style="color:#2f7a4a">${p.p} 🌼</span></li>`).join('')}</ol></div>`;
+    const c = E.j[E.campeao] || { n: '—', p: 0, a: 0 }, rk = ranking(E).slice(0, 10);
+    corpo = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:2vw;align-items:center;flex:1">
+      <div class="centro"><div class="avatar grande pulsa" style="font-size:9rem">🏆</div>
+        <p class="claro" style="font-size:1.5rem;margin:0">Campeão Botânico</p><h1 style="font-size:3.6rem">${esc(c.n)}</h1>
+        <p style="font-size:1.4rem">${c.p} 🌼 de pólen · ${c.a} acertos</p></div>
+      <div class="cartao"><h2 style="margin-bottom:10px">🌼 Ranking de pólen (todo mundo que jogou)</h2>
+        <ol class="lista-rank">${rk.map((p, i) => `<li style="background:#0f2e1d0d"><span class="pos">${i + 1}º</span><span>${estagio(p.e).e} ${esc(p.n)}</span><span class="pts" style="color:#2f7a4a">${p.p} 🌼</span></li>`).join('')}</ol></div></div>`;
     botoes = `<button class="btn sec" data-acao="nova">🌱 Nova sala</button>`;
   }
-  const html = `<div class="tela">${topo}${erroMsg ? `<p class="erro-msg">${esc(erroMsg)}</p>` : ''}${corpo}</div>
-    <div class="controles ${controlesOcultos ? 'oculto' : ''}">${botoes}<span class="dica">H esconde os botões · F tela cheia</span></div>`;
+  const html = `<div class="tela">${topo}<div class="corpo">${erroMsg ? `<p class="erro-msg">${esc(erroMsg)}</p>` : ''}${corpo}</div></div>
+    <div class="controles ${controlesOcultos ? 'oculto' : ''}">${botoes}<span class="dica">H esconde os botões · F tela cheia${FOCO ? ' · Esc volta' : ''}</span></div>`;
   if (html !== ultimoHtml) { raiz.innerHTML = html; ultimoHtml = html; }
 }
 let ultimoHtml = '';
 document.addEventListener('click', (ev) => {
-  const a = ev.target.closest('[data-acao]'); if (a) return acao(a.dataset.acao);
+  const a = ev.target.closest('[data-acao]'); if (a) return acao(a.dataset.acao, a.dataset.arg);
   const r = ev.target.closest('[data-remover]'); if (r) return acao('remover', r.dataset.remover);
 });
 
-document.getElementById('polen').innerHTML = Array.from({length: 22}, (_, i) => `<i style="left:${(i*37)%100}%;animation-duration:${10+(i%5)*3}s;animation-delay:${-(i*1.9)}s"></i>`).join('');
+document.getElementById('polen').innerHTML = Array.from({ length: 22 }, (_, i) => `<i style="left:${(i * 37) % 100}%;animation-duration:${10 + (i % 5) * 3}s;animation-delay:${-(i * 1.9)}s"></i>`).join('');
 
 // ---------------- início ----------------
 (async function () {
@@ -422,11 +560,12 @@ document.getElementById('polen').innerHTML = Array.from({length: 22}, (_, i) => 
     const t0 = Date.now();
     const d = await rpc('ver_jogo', { p_codigo: SALA });
     ajustarRelogio(d.agora, t0);
-    E = d.estado && d.estado.j ? d.estado : { fase: 'lobby', j: {}, rodada: 0, usadas: [] };
+    E = d.estado && d.estado.j ? d.estado : { fase: 'lobby', j: {}, rodada: 0, cfg: { tempo: 1 } };
     PERG = await rpc('host_perguntas', { p_codigo: SALA, p_segredo: SEG });
     PMAP = Object.fromEntries(PERG.map((q) => [q.id, q]));
     if (!PERG.length) erroMsg = 'O banco de perguntas está vazio.';
     if (E.fase === 'pergunta') await lerRespostas();
+    if (E.fase === 'revelacao' && E.revelacao && Object.keys(E.revelacao).length === 1) FOCO = Object.keys(E.revelacao)[0];
   } catch (e) { return telaLogin(e.message); }
   desenhar();
   setInterval(tick, 400);

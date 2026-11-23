@@ -115,6 +115,7 @@ function receber(estado, versao) {
 }
 
 // ---------- telas do jogo ----------
+function minhaQ() { const a = ESTADO.atrib, qid = a && a[EU.id]; return qid && ESTADO.qs ? ESTADO.qs[qid] : null; }
 function meuDuelo() { return (ESTADO.duelos || []).find((d) => d.a === EU.id || d.b === EU.id); }
 function oponente(d) { if (!d || !d.b) return null; const id = d.a === EU.id ? d.b : d.a; return { id, ...(ESTADO.j[id] || { n: '?' }) }; }
 function meuPlacar(d) { return d.a === EU.id ? [d.pa, d.pb] : [d.pb, d.pa]; }
@@ -123,11 +124,32 @@ function trilha(n) {
   return `<div class="trilha">${ESTAGIOS.slice(0, 5).map((s, i) => `<span class="${i > n ? 'apagado' : ''}">${s.e}</span>`).join('<i>›</i>')}</div>`;
 }
 
+// posição na torcida e quanto falta para alcançar o 1º (quem lidera volta na repescagem)
+function situacaoTorcida() {
+  const eu = ESTADO.j[EU.id]; if (!eu || eu.v || !eu.el) return null;
+  const t = ranking(ESTADO).filter((p) => !p.v && p.el), pos = t.findIndex((p) => p.id === EU.id) + 1;
+  return { pos, falta: pos > 1 ? t[0].p - eu.p + 1 : 0, total: t.length };
+}
 function miniDuelo(d) {
-  if (!d) return `<div class="mini-duelo"><span>🌻 Torcida</span><span class="pl">${(ESTADO.j[EU.id] || {}).p || 0} 🌼</span></div>`;
+  if (!d) {
+    const st = situacaoTorcida(), eu = ESTADO.j[EU.id] || {};
+    const meta = !st ? '' : st.pos === 1 ? '🥇 1º da torcida: você é o próximo a rebrotar!' : `${st.pos}º da torcida · faltam <b>${st.falta} 🌼</b> para o 1º lugar`;
+    return `<div class="mini-duelo"><span>🌻 Torcida</span><span class="pl">${eu.p || 0} 🌼</span></div>${meta ? `<p class="tensao">${meta}</p>` : ''}`;
+  }
   if (!d.b) return `<div class="mini-duelo"><span>🌰 Passe livre nesta rodada</span></div>`;
   const op = oponente(d), [m, o] = meuPlacar(d);
-  return `<div class="mini-duelo"><span>Você</span><span class="pl">${m} × ${o}</span><span style="text-align:right">${esc(curto(op.n))} ${estagio(op.e).e}</span></div>`;
+  return `<div class="mini-duelo"><span>Você</span><span class="pl">${m} × ${o}</span><span style="text-align:right">${esc(curto(op.n))} ${estagio(op.e).e}</span></div>${tensao(d, m, o)}`;
+}
+// mostra o que está em jogo NESTA pergunta (efeito de meta próxima e de aversão à perda)
+function tensao(d, m, o) {
+  const e = ESTADO;
+  if (d.w || !['preparar', 'pergunta'].includes(e.fase)) return '';
+  if (e.morte_subita) return '<p class="tensao quente">⚡ Morte súbita: acertou primeiro, levou!</p>';
+  const resta = e.k - e.q_num - 1;          // perguntas que sobram depois desta
+  if (m + 1 - o > resta) return '<p class="tensao quente">🏆 Acerte esta e o duelo é seu!</p>';
+  if (o + 1 - m > resta) return '<p class="tensao perigo">🛡️ Pergunta decisiva: não pode errar!</p>';
+  if (m === o) return '<p class="tensao">🤝 Empatados: quem acertar sai na frente</p>';
+  return '';
 }
 
 function desenhar() {
@@ -169,45 +191,60 @@ function desenhar() {
           <div class="lado"><div class="avatar">${estagio(op.e).e}</div><div class="nome">${esc(primeiroNome(op.n))}</div><div class="suave pequeno">${esc(curto(op.n))}</div></div>
         </div>
       </div>
-      <p class="centro claro">Melhor de ${e.k} perguntas. Empatou? <b>Morte súbita</b> ⚡</p>
+      <p class="centro claro">Melhor de ${e.k} perguntas, e cada dupla recebe a sua. Empatou? <b>Morte súbita</b> ⚡</p>
       <p class="centro suave pequeno" style="color:#ffffff99">Responder certo e rápido também vale pólen 🌼 para o ranking geral.</p>`;
   } else if (fase === 'preparar') {
     html = `${MARCA}${miniDuelo(meuDuelo())}
       <div class="cartao centro surge" style="padding:36px 18px">
         <h2>${e.morte_subita ? '⚡ MORTE SÚBITA' : `Pergunta ${e.q_num + 1} de ${e.k}`}</h2>
-        ${e.morte_subita ? '<p class="suave">Quem acertar (e mais rápido) leva o duelo!</p>' : ''}
+        ${e.morte_subita ? `<p class="suave">${meuDuelo() && meuDuelo().b && !meuDuelo().w ? 'Quem acertar (e mais rápido) leva o duelo!' : 'Só os duelos empatados valem; você joga por pólen 🌼'}</p>` : ''}
         <div class="contagem" data-fim="${ms(e.prep_fim)}">3</div>
         <p class="suave">Foco total 🌱</p>
       </div>`;
   } else if (fase === 'pergunta') {
-    const minha = MINHAS[e.ref];
+    const q = minhaQ(), minha = MINHAS[e.ref];
     const d = meuDuelo(), op = oponente(d);
     const opRespondeu = op && (e.respondidos || []).includes(op.id);
     const valeDuelo = d && d.b && !d.w;
-    html = `${MARCA}${miniDuelo(d)}
+    if (!q) html = `${MARCA}<div class="cartao centro surge"><div class="avatar">🌱</div><h2>Você chegou no meio de uma pergunta</h2><p class="suave">Na próxima você já recebe a sua. Fica de olho!</p></div>`;
+    else html = `${MARCA}${miniDuelo(d)}
       <div class="barra-tempo" data-ini="${ms(e.q_inicio)}" data-fim="${ms(e.q_fim)}"></div>
-      <div class="cartao"><span class="tema">${esc(e.q.tema)}</span>${e.morte_subita ? ' <span class="tema" style="background:var(--sol)">⚡ morte súbita</span>' : ''}
-        <div class="enunciado">${esc(e.q.texto)}</div></div>
-      <div class="opcoes">${e.q.opcoes.map((t, i) => `<button class="op op${i} ${minha !== undefined ? (minha === i ? 'escolhida' : 'apagada') : ''}" data-op="${i}" ${minha !== undefined ? 'disabled' : ''}><span class="letra">${LETRAS[i]}</span><span>${esc(t)}</span></button>`).join('')}</div>
+      <div class="cartao"><span class="tema">${esc(q.tema)}</span>${e.morte_subita ? ' <span class="tema" style="background:var(--sol);color:#3a2a00">⚡ morte súbita</span>' : ''}
+        <div class="enunciado">${esc(q.texto)}</div></div>
+      <div class="opcoes">${q.opcoes.map((t, i) => `<button class="op op${i} ${minha !== undefined ? (minha === i ? 'escolhida' : 'apagada') : ''}" data-op="${i}" ${minha !== undefined ? 'disabled' : ''}><span class="letra">${LETRAS[i]}</span><span>${esc(t)}</span></button>`).join('')}</div>
       <p class="centro claro">${minha !== undefined ? '🌱 Resposta plantada! Espera o tempo acabar…' : ''}
         ${valeDuelo && opRespondeu && minha === undefined ? `🍃 <b>${esc(primeiroNome(op.n))} já respondeu!</b>` : ''}
-        ${d && d.w && d.b ? 'Seu duelo já está decidido: agora vale pólen 🌼' : ''}</p>
+        ${d && d.w && d.b ? 'Seu duelo já está decidido: agora vale pólen 🌼' : ''}
+        ${!valeDuelo && !(d && d.w && d.b) ? 'Valendo pólen 🌼 para o ranking e a repescagem' : ''}</p>
       ${avisoTemp ? `<p class="centro erro-msg">${esc(avisoTemp)}</p>` : ''}`;
   } else if (fase === 'revelacao') {
-    const rv = e.revelacao || {}, minha = MINHAS[e.ref];
-    const certo = minha === rv.correta;
+    const q = minhaQ(), rv = (e.revelacao || {})[e.atrib && e.atrib[EU.id]], minha = MINHAS[e.ref];
     const d = meuDuelo();
-    const titulo = minha === undefined ? '<span class="ruim">🍂 O tempo secou</span>' : certo ? `<span class="bom">🌿 Mandou bem! +${eu.g || 0} 🌼</span>` : '<span class="ruim">🥀 Murchou… errou</span>';
-    if (mudouTela) { if (certo) { som('certo'); vibrar(60); } else { som('errado'); vibrar([80, 60, 80]); } }
-    html = `${MARCA}${miniDuelo(d)}
-      <div class="cartao centro surge"><div class="resultado">${titulo}</div>
-        ${eu.s >= 2 ? `<div class="fogo" style="margin-top:8px">🔥 ${eu.s} seguidas</div>` : ''}</div>
-      <div class="cartao">
-        <p class="suave pequeno" style="margin:0 0 6px">Resposta certa:</p>
-        <div class="op op${rv.correta} certa" style="box-shadow:none"><span class="letra">${LETRAS[rv.correta]}</span><span>${esc((e.q.opcoes || [])[rv.correta])}</span></div>
-        ${rv.explicacao ? `<div class="explica" style="margin-top:12px"><b>Por quê?</b> ${esc(rv.explicacao)}</div>` : ''}
-        <p class="suave pequeno centro" style="margin:10px 0 0">${rv.total ? Math.round(100 * (rv.stats[rv.correta] || 0) / rv.total) : 0}% da sala acertou</p>
-      </div>`;
+    if (!q || !rv) html = `${MARCA}${miniDuelo(d)}<div class="cartao centro surge"><div class="avatar">🪴</div><h2>Hora da explicação</h2><p class="suave">Olhe para o telão: o professor está comentando as respostas.</p></div>`;
+    else {
+      const certo = minha === rv.correta;
+      const titulo = minha === undefined ? '<span class="ruim">🍂 O tempo secou</span>' : certo ? `<span class="bom">🌿 Mandou bem! +${eu.g || 0} 🌼</span>` : '<span class="ruim">🥀 Murchou… errou</span>';
+      if (mudouTela) { if (certo) { som('certo'); vibrar(60); } else { som('errado'); vibrar([80, 60, 80]); } }
+      html = `${MARCA}${miniDuelo(d)}
+        <div class="cartao centro surge"><div class="resultado">${titulo}</div>
+          ${eu.ms != null && minha !== undefined ? `<p class="suave" style="margin:6px 0 0">⚡ respondeu em <b>${(eu.ms / 1000).toFixed(1).replace('.', ',')} s</b></p>` : ''}
+          ${eu.s >= 2 ? `<div class="fogo" style="margin-top:8px">🔥 ${eu.s} seguidas${eu.s >= 3 ? ' · pegando fogo!' : ''}</div>` : ''}
+          ${(() => { const op = oponente(d); if (!op || !d || !d.b) return '';
+            const nm = esc(primeiroNome(op.n));
+            const txt = op.ok === 1 ? (certo ? `🍃 ${nm} também acertou` : `🌿 ${nm} acertou`) : op.ok === 0 ? `🥀 ${nm} errou` : `🍂 ${nm} não respondeu`;
+            return `<p class="suave" style="margin:6px 0 0">${txt}</p>`; })()}</div>
+        <div class="cartao">
+          <span class="tema">${esc(q.tema)}</span>
+          <div class="enunciado pequeno" style="font-size:.95rem">${esc(q.texto)}</div>
+          ${minha !== undefined && !certo ? `<p class="suave pequeno" style="margin:12px 0 6px">Você marcou:</p>
+          <div class="op op${minha} apagada" style="box-shadow:none;opacity:.6"><span class="letra">${LETRAS[minha]}</span><span>${esc(q.opcoes[minha])}</span></div>` : ''}
+          <p class="suave pequeno" style="margin:12px 0 6px">Resposta certa:</p>
+          <div class="op op${rv.correta} certa" style="box-shadow:none"><span class="letra">${LETRAS[rv.correta]}</span><span>${esc(q.opcoes[rv.correta])}</span></div>
+          ${rv.explicacao ? `<div class="explica" style="margin-top:12px"><b>Por quê?</b> ${esc(rv.explicacao)}</div>` : ''}
+          <p class="suave pequeno centro" style="margin:10px 0 0">${rv.quem ? Math.round(100 * rv.acertos / rv.quem) : 0}% de quem recebeu esta pergunta acertou</p>
+        </div>
+        <p class="centro claro pequeno">🪴 O professor está comentando no telão. A próxima pergunta começa quando ele liberar.</p>`;
+    }
   } else if (fase === 'fim_rodada') {
     const d = meuDuelo();
     if (d && d.w === EU.id) {
@@ -233,6 +270,7 @@ function desenhar() {
         <div class="avatar" style="margin:8px 0">${s.e}</div>
         <h2>Chegou a ${s.nome}</h2>
         <p><b>${eu.p} 🌼 pólen</b> · ${eu.a} acerto${eu.a === 1 ? '' : 's'} · <b>${pos}º</b> de ${rk.length} no ranking</p>
+        ${conquistas(eu, rk, pos)}
         <button class="btn" data-acao="resultado">🌸 Postar meu resultado</button>
       </div>
       <div class="cartao"><h3 style="margin-bottom:8px">🌼 Top 5 em pólen</h3><ol class="lista-rank">${rk.slice(0, 5).map((p, i) => `<li class="${p.id === EU.id ? 'eu' : ''}" style="background:#0f2e1d0d"><span class="pos">${i + 1}º</span><span>${estagio(p.e).e} ${esc(curto(p.n))}</span><span class="pts" style="color:#2f7a4a">${p.p}</span></li>`).join('')}</ol></div>`;
@@ -242,6 +280,19 @@ function desenhar() {
   if (html !== ultimoHtml) { app.innerHTML = html; ultimoHtml = html; if (mudouTela) window.scrollTo(0, 0); }
 }
 
+function conquistas(eu, rk, pos) {
+  const c = [];
+  const prec = eu.nr ? Math.round(100 * eu.a / eu.nr) : 0;
+  if (ESTADO.campeao === EU.id) c.push(['🏆', 'Campeão botânico']);
+  if (pos > 0 && pos <= 3) c.push(['🌼', `Top 3 em pólen`]);
+  if ((eu.sm || 0) >= 3) c.push(['🔥', `${eu.sm} acertos seguidos`]);
+  if (eu.mm && eu.mm < 1e9) { const maisRapido = rk.every((p) => !p.mm || p.mm >= eu.mm); c.push(['⚡', maisRapido ? 'Resposta mais rápida da Copa' : `Acerto em ${(eu.mm / 1000).toFixed(1).replace('.', ',')} s`]); }
+  if (eu.nr >= 3 && prec >= 75) c.push(['🎯', `${prec}% de precisão`]);
+  if (eu.r) c.push(['🌧️', 'Rebrotou na repescagem']);
+  if ((eu.e || 0) >= 2) c.push([estagio(eu.e).e, `Evoluiu até ${estagio(eu.e).nome}`]);
+  if (!c.length) c.push(['🌱', 'Plantou a primeira semente']);
+  return `<div class="conquistas">${c.slice(0, 4).map(([i, t]) => `<span class="conq"><b>${i}</b>${esc(t)}</span>`).join('')}</div>`;
+}
 function telaTorcida(titulo, acabeiDePerder) {
   const e = ESTADO, eu = e.j[EU.id];
   const torcida = ranking(e).filter((p) => !p.v && p.el);
@@ -249,7 +300,8 @@ function telaTorcida(titulo, acabeiDePerder) {
   return `${MARCA}<div class="cartao centro surge">
     <div class="avatar">🌻</div><h2>${esc(titulo)}</h2>
     <p>${acabeiDePerder ? 'Mas ainda não acabou! ' : ''}Você está na <b>torcida</b>: continue respondendo para ganhar pólen 🌼.</p>
-    ${eu.el ? `<p class="suave">Se o número de classificados ficar ímpar, <b>o melhor da torcida em pólen volta</b> pela repescagem.${pos ? ` Você está em <b>${pos}º</b> na torcida.` : ''}</p>` : '<p class="suave">Você entrou com o torneio em andamento: está jogando pelo ranking de pólen.</p>'}
+    ${eu.el ? `<p class="suave">Se o número de classificados ficar ímpar, <b>o melhor da torcida em pólen volta</b> pela repescagem.</p>
+      ${pos === 1 ? '<p class="fogo">🥇 Você lidera a torcida: é o próximo a rebrotar!</p>' : pos ? `<p class="fogo">${pos}º da torcida · faltam ${torcida[0].p - eu.p + 1} 🌼 para o 1º</p>` : ''}` : '<p class="suave">Você entrou com o torneio em andamento: está jogando pelo ranking de pólen.</p>'}
     <p style="font-weight:800">${eu.p} 🌼 · ${estagio(eu.e).e} ${estagio(eu.e).nome}</p></div>`;
 }
 

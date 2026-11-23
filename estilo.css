@@ -164,3 +164,11 @@ a { color: inherit; }
   body { overscroll-behavior-y: none; -webkit-user-select: none; user-select: none; }
   input, textarea { -webkit-user-select: text; user-select: text; }
 }
+
+/* design comportamental: o que está em jogo agora + conquistas */
+.tensao { margin: -6px 0 0; text-align: center; font-weight: 800; font-size: .92rem; color: var(--broto); background: #ffffff0d; border-radius: 0 0 14px 14px; padding: 6px 10px; }
+.tensao.quente { color: #3a2a00; background: var(--polen); animation: pulsa 1.4s ease-in-out infinite; }
+.tensao.perigo { color: #fff; background: var(--petala); }
+.conquistas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+.conq { display: flex; flex-direction: column; align-items: center; gap: 2px; background: #3f9a5c18; border: 1px solid #3f9a5c44; border-radius: 4px 14px 4px 14px; padding: 10px 6px; font-size: .82rem; font-weight: 800; line-height: 1.2; text-align: center; }
+.conq b { font-size: 1.6rem; }
