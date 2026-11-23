@@ -96,7 +96,7 @@ function telaLogin(msg) {
     } catch (e) { telaLogin(e.message); }
   };
   document.getElementById('criar').onclick = criar;
-  document.getElementById('senha').onkeydown = (e) => e.key === 'Enter' && criar();
+  document.getElementById('senha').onkeydown = (e) => { if (e.key === 'Enter') criar(); };
 }
 
 // ---------------- salvar estado público ----------------

@@ -45,7 +45,7 @@ function telaCodigo(msg) {
   </div>`;
   const ir = () => { const c = document.getElementById('cod').value.toUpperCase().trim(); if (c.length === 4) location.search = '?sala=' + c; };
   document.getElementById('ir').onclick = ir;
-  document.getElementById('cod').onkeydown = (e) => e.key === 'Enter' && ir();
+  document.getElementById('cod').onkeydown = (e) => { if (e.key === 'Enter') ir(); };
 }
 
 function telaNome(msg) {
@@ -72,7 +72,7 @@ function telaNome(msg) {
       som('entrou'); vibrar(40); iniciar();
     } catch (e) { document.getElementById('erro').textContent = e.message; bt.disabled = false; bt.textContent = 'Entrar 🌱'; }
   };
-  bt.onclick = enviar; campo.onkeydown = (e) => e.key === 'Enter' && enviar();
+  bt.onclick = enviar; campo.onkeydown = (e) => { if (e.key === 'Enter') enviar(); };
   setTimeout(() => campo.focus(), 300);
 }
 

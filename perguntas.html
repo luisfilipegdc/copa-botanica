@@ -71,7 +71,7 @@ function tela(msg) {
       <h2>Senha do professor</h2><input class="campo" id="s" type="password"><p class="erro-msg">${esc(msg || '')}</p>
       <button class="btn" id="ok">Entrar</button></div>`;
     const ir = async () => { SENHA = document.getElementById('s').value; await carregar(); };
-    document.getElementById('ok').onclick = ir; document.getElementById('s').onkeydown = (e) => e.key === 'Enter' && ir();
+    document.getElementById('ok').onclick = ir; document.getElementById('s').onkeydown = (e) => { if (e.key === 'Enter') ir(); };
     return;
   }
   const ativas = LISTA.filter((q) => q.ativa).length;
