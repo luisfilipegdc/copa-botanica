@@ -76,7 +76,7 @@ function tela(msg) {
   }
   const ativas = LISTA.filter((q) => q.ativa).length;
   const temas = {}; LISTA.filter((q) => q.ativa).forEach((q) => (temas[q.tema] = (temas[q.tema] || 0) + 1));
-  app.innerHTML = `${MARCA}<p class="claro" style="margin:0">Banco de perguntas · <a href="telao.html">ir para o telão</a></p>
+  app.innerHTML = `${MARCA}<p class="claro" style="margin:0">Banco de perguntas · <a href="telao">ir para o telão</a> · <a href="manual#perguntas">📖 manual</a></p>
   <div class="cartao">
     <h2>Importar perguntas novas</h2>
     <p class="suave">Copie as perguntas do Word e cole aqui. Formato:</p>

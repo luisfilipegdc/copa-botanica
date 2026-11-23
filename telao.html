@@ -84,7 +84,7 @@ function telaLogin(msg) {
       <p class="erro-msg">${esc(msg || '')}</p>
       <button class="btn" id="criar">Criar sala 🌱</button>
       ${ultima ? `<button class="btn sec" style="margin-top:10px;color:var(--tinta);border-color:#0002" onclick="location.search='?sala=${esc(ultima)}'">Voltar para a sala ${esc(ultima)}</button>` : ''}
-      <p class="suave pequeno" style="margin-top:14px">Banco de perguntas: <a href="perguntas.html">ver e importar perguntas</a></p>
+      <p class="suave pequeno" style="margin-top:14px">📖 <a href="manual"><b>Manual de uso</b></a> · 📝 <a href="perguntas">Banco de perguntas</a></p>
     </div></div>`;
   const criar = async () => {
     const senha = document.getElementById('senha').value;

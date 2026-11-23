@@ -59,7 +59,7 @@ function telaNome(msg) {
     <input class="campo" id="nome" maxlength="60" autocomplete="name" placeholder="Seu nome completo">
     <p class="erro-msg" id="erro">${esc(msg || '')}</p>
     <button class="btn" id="entrar">Entrar 🌱</button>
-    <p class="suave pequeno" style="margin:12px 0 0">Sala <b>${esc(SALA)}</b> · use o nome que está na chamada</p>
+    <p class="suave pequeno" style="margin:12px 0 0">Sala <b>${esc(SALA)}</b> · use o nome que está na chamada · <a href="manual#regras">como funciona?</a></p>
   </div>`;
   const campo = document.getElementById('nome'), bt = document.getElementById('entrar');
   const enviar = async () => {

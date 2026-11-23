@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f2e1d">
+<title>Manual · Copa Botânica</title>
+<meta name="description" content="Como usar a Copa Botânica Marista Asa Sul 2026: telão, alunos, regras e banco de perguntas.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌳</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+<style>
+  .app { max-width: 760px; gap: 18px; }
+  .indice { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: none; position: sticky; top: 0; z-index: 5; background: linear-gradient(180deg, var(--floresta2) 70%, transparent); }
+  .indice a { flex: none; text-decoration: none; background: #ffffff14; border: 1px solid #a8d67244; padding: 8px 14px; border-radius: 4px 14px 4px 14px; font-weight: 800; font-size: .9rem; white-space: nowrap; }
+  .cartao h2 { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .cartao h2 .ic { font-size: 1.6rem; }
+  .passos { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; counter-reset: p; }
+  .passos li { display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: start; line-height: 1.5; }
+  .passos li::before { counter-increment: p; content: counter(p); width: 34px; height: 34px; display: grid; place-items: center; font-family: 'Fredoka'; color: #fff; background: var(--samambaia); border-radius: 0 60% 0 60%; }
+  .tecla { display: inline-block; font-family: ui-monospace, Menlo, monospace; font-weight: 800; background: #fff; border: 1.5px solid #cfd8bd; border-bottom-width: 3px; border-radius: 6px; padding: 0 7px; font-size: .9em; }
+  .botao-ex { display: inline-block; background: var(--polen); color: #3a2a00; font-weight: 800; padding: 1px 9px; border-radius: 3px 10px 3px 10px; font-size: .92em; white-space: nowrap; }
+  .evolucao { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; text-align: center; margin: 10px 0; }
+  .evolucao div { background: #3f9a5c14; border-radius: 4px 14px 4px 14px; padding: 8px 4px; font-size: .78rem; line-height: 1.25; }
+  .evolucao b { display: block; font-size: 1.8rem; margin-bottom: 2px; }
+  .regras { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+  .regras li { display: grid; grid-template-columns: 34px 1fr; gap: 10px; line-height: 1.5; }
+  .regras li span { font-size: 1.5rem; line-height: 1.2; }
+  .dica { background: #fff4d6; color: #5c4400; border-left: 5px solid var(--polen); padding: 10px 14px; border-radius: 4px 14px 4px 14px; line-height: 1.5; margin-top: 12px; }
+  pre.modelo { background: #0f2e1d0f; padding: 12px; border-radius: 10px; white-space: pre-wrap; font-size: .88rem; margin: 8px 0; }
+  details { border-top: 1px solid #0001; padding: 12px 0; }
+  details:first-of-type { border-top: 0; }
+  summary { font-weight: 800; cursor: pointer; list-style: none; display: flex; gap: 8px; }
+  summary::before { content: '🌱'; }
+  details[open] summary::before { content: '🌿'; }
+  summary::-webkit-details-marker { display: none; }
+  details p { margin: 8px 0 0 28px; line-height: 1.5; }
+  .links { display: grid; gap: 10px; }
+  .links a { text-decoration: none; }
+  @media (max-width: 420px) { .evolucao { grid-template-columns: repeat(5, 1fr); gap: 4px; } .evolucao div { font-size: .68rem; } .evolucao b { font-size: 1.5rem; } }
+  @media print {
+    body { background: #fff; color: #000; } body::before, body::after, .polen-ar, .indice, .links { display: none; }
+    .cartao { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; } .cartao::before { display: none; }
+    .logo-grande h1 { color: #1d2a1f; }
+  }
+</style>
+</head>
+<body>
+<div class="polen-ar" id="polen"></div>
+<div class="app">
+  <div class="logo-grande" id="topo"></div>
+  <p class="centro claro" style="margin:-6px 0 0;font-weight:800">Manual de uso</p>
+
+  <nav class="indice">
+    <a href="#professor">🖥️ Professor</a><a href="#alunos">📱 Alunos</a><a href="#regras">🏆 Regras</a>
+    <a href="#perguntas">📝 Perguntas</a><a href="#problemas">🩺 Problemas</a>
+  </nav>
+
+  <section class="cartao" id="antes">
+    <h2><span class="ic">🧰</span>Antes da aula</h2>
+    <ul class="regras">
+      <li><span>💻</span><div>Um <b>computador ligado ao projetor</b>, com internet. Ele vai ser o telão e o juiz da partida.</div></li>
+      <li><span>📱</span><div>Alunos com <b>celular e internet</b> (dados ou Wi-Fi da escola). Não precisa instalar nada.</div></li>
+      <li><span>🔑</span><div>A <b>senha do professor</b> (peça para quem organiza a Copa).</div></li>
+      <li><span>🔊</span><div>Som do computador ligado: o telão toca efeitos no início das perguntas e no fim das rodadas.</div></li>
+    </ul>
+    <div class="dica">💡 Faça uma partida de teste com 2 ou 3 celulares antes da aula. Leva 5 minutos e evita surpresa com a rede da escola.</div>
+  </section>
+
+  <section class="cartao" id="professor">
+    <h2><span class="ic">🖥️</span>Professor: conduzindo a partida</h2>
+    <ol class="passos">
+      <li><div>No computador do projetor, abra <a href="telao"><b>copa-botanica.vercel.app/telao</b></a>, digite a senha e clique em <span class="botao-ex">Criar sala 🌱</span>.</div></li>
+      <li><div>Aperte <span class="tecla">F</span> para tela cheia. O telão mostra o <b>QR code</b> e um <b>código de 4 letras</b>. Os nomes vão aparecendo conforme os alunos entram.</div></li>
+      <li><div>Nome estranho ou repetido? <b>Clique no nome</b> no telão para remover o aluno.</div></li>
+      <li><div>Todos dentro? Clique em <span class="botao-ex">🌿 Fechar sala e sortear duelos</span>. O telão mostra a chave da rodada.</div></li>
+      <li><div>Clique em <span class="botao-ex">▶ Começar rodada</span>. A partir daqui o jogo anda sozinho: contagem, pergunta, resposta certa com explicação e placar.</div></li>
+      <li><div>Quer comentar uma resposta? Na tela da resposta, clique em <span class="botao-ex">⏸ Pausar para explicar</span>. Depois, <span class="botao-ex">⏭ Próxima</span>.</div></li>
+      <li><div>No fim de cada rodada aparece quem evoluiu. Clique em <span class="botao-ex">🌱 Sortear próxima rodada</span> até sair o <b>campeão</b> 🏆.</div></li>
+    </ol>
+    <div class="dica">⌨️ Atalhos do telão: <span class="tecla">F</span> tela cheia · <span class="tecla">H</span> esconde os botões (para projetar sem distração).<br>
+      ⏹ Se a turma inteira já respondeu, a pergunta fecha sozinha. Para fechar antes do tempo, use <span class="botao-ex">⏹ Encerrar pergunta agora</span>.</div>
+    <div class="dica">⚠️ Use <b>sempre o mesmo computador</b> do começo ao fim. Se a página fechar sem querer, abra o telão de novo nesse computador: ele oferece <b>“Voltar para a sala”</b> e a partida continua de onde parou.</div>
+  </section>
+
+  <section class="cartao" id="alunos">
+    <h2><span class="ic">📱</span>Alunos: como entrar</h2>
+    <ol class="passos">
+      <li><div>Aponte a câmera do celular para o <b>QR code</b> do telão. Sem QR? Entre em <b>copa-botanica.vercel.app</b> e digite o código de 4 letras.</div></li>
+      <li><div>Digite o <b>nome completo</b> (nome e sobrenome, como na chamada) e toque em <span class="botao-ex">Entrar 🌱</span>.</div></li>
+      <li><div>Espere no lobby. Quando a sala fechar, aparece o seu adversário: <b>você VS colega</b>.</div></li>
+      <li><div>Leia a pergunta e toque na alternativa. <b>Acertar rápido vale mais pólen</b> 🌼. Depois aparece a resposta certa e o porquê.</div></li>
+    </ol>
+    <div class="dica">🔄 Celular bloqueou ou a página fechou? É só abrir o link de novo no mesmo celular: o aluno volta para o jogo sem perder nada.</div>
+  </section>
+
+  <section class="cartao" id="regras">
+    <h2><span class="ic">🏆</span>Regras da Copa</h2>
+    <ul class="regras">
+      <li><span>⚔️</span><div><b>Duelos de 1 contra 1.</b> Cada duelo é melhor de 3 perguntas. A <b>grande final</b> é melhor de 5.</div></li>
+      <li><span>⚡</span><div><b>Empatou?</b> Morte súbita: quem acertar (e mais rápido) leva. Se ninguém acertar em 2 tentativas, vence quem respondeu mais rápido no duelo.</div></li>
+      <li><span>🌰</span><div><b>Número ímpar na 1ª rodada?</b> Um aluno sorteado ganha passe livre (semente dormente) e avança direto.</div></li>
+      <li><span>🌼</span><div><b>Pólen:</b> todo mundo responde todas as perguntas. Cada acerto vale 100 pólen + até 50 de bônus pela rapidez. No fim sai o ranking geral.</div></li>
+      <li><span>🌻</span><div><b>Perdeu? Vira torcida</b> e continua respondendo e somando pólen.</div></li>
+      <li><span>🌧️</span><div><b>Repescagem:</b> se sobrar número ímpar de classificados, quem tem mais pólen na torcida <b>rebrota</b> e volta para a Copa.</div></li>
+    </ul>
+    <p style="margin:14px 0 4px;font-weight:800">Cada vitória é uma novidade evolutiva:</p>
+    <div class="evolucao">
+      <div><b>🌱</b>Briófita<br><span class="suave">começo</span></div>
+      <div><b>🌿</b>Pteridófita<br><span class="suave">vasos</span></div>
+      <div><b>🌲</b>Gimnosperma<br><span class="suave">semente e pólen</span></div>
+      <div><b>🌸</b>Angiosperma<br><span class="suave">flor</span></div>
+      <div><b>🍎</b>Com fruto<br><span class="suave">fruto</span></div>
+    </div>
+  </section>
+
+  <section class="cartao" id="perguntas">
+    <h2><span class="ic">📝</span>Banco de perguntas</h2>
+    <p style="margin-top:0;line-height:1.5">Hoje são <b>50 perguntas</b> sobre novidades evolutivas, ciclos de vida e tecidos vegetais. Uma partida com 30 alunos usa umas 20, sem repetir.</p>
+    <ol class="passos">
+      <li><div>Abra <a href="perguntas"><b>copa-botanica.vercel.app/perguntas</b></a> e digite a senha do professor.</div></li>
+      <li><div>Copie as perguntas do Word e cole na caixa, neste formato:
+        <pre class="modelo">TEMA: Hormônios vegetais
+1. Qual hormônio acelera o amadurecimento dos frutos?
+A) Auxina
+B) Etileno
+C) Giberelina
+D) Citocinina
+RESPOSTA: B
+POR QUÊ: O etileno é um gás que acelera o amadurecimento.</pre>
+        <span class="suave pequeno"><b>TEMA</b> e <b>POR QUÊ</b> são opcionais, mas a explicação é o que faz o aluno aprender com o erro. Pode ter de 2 a 6 alternativas.</span></div></li>
+      <li><div>Clique em <span class="botao-ex">👀 Conferir</span>. O sistema mostra como cada pergunta ficou e avisa o que não entendeu.</div></li>
+      <li><div>Tudo certo? <span class="botao-ex">✅ Importar</span>. As perguntas entram no jogo na próxima sala criada.</div></li>
+      <li><div>Para tirar uma pergunta do jogo, clique em <b>Desativar</b> na lista (dá para reativar depois).</div></li>
+    </ol>
+    <div class="dica">✍️ Somatório, V/F e certo/errado precisam virar alternativas. Exemplo: “Quais estão corretas? A) Apenas I e II B) Apenas I e III …” ou “Qual afirmativa está ERRADA?”.</div>
+  </section>
+
+  <section class="cartao" id="problemas">
+    <h2><span class="ic">🩺</span>Problemas comuns</h2>
+    <details><summary>O QR code não abre no celular</summary><p>Confira se o celular tem internet. Se a câmera não ler, o aluno pode entrar em copa-botanica.vercel.app e digitar o código de 4 letras que aparece embaixo do QR.</p></details>
+    <details><summary>“Digite seu nome completo”</summary><p>O jogo pede nome e sobrenome, para o professor saber quem é quem no ranking.</p></details>
+    <details><summary>“Sala não encontrada”</summary><p>O código foi digitado errado ou a sala é de outra aula. Confira as 4 letras no telão.</p></details>
+    <details><summary>O telão pede para criar uma sala nova</summary><p>A sala só pode ser conduzida pelo computador que a criou. Abra o telão no mesmo computador e clique em “Voltar para a sala”.</p></details>
+    <details><summary>Um aluno não consegue responder</summary><p>Peça para recarregar a página. Se a pergunta já tiver acabado, ele volta na próxima. Respostas depois do tempo não contam.</p></details>
+    <details><summary>“Senha do professor incorreta”</summary><p>Confira maiúsculas e minúsculas. Se esqueceu, fale com quem organiza a Copa.</p></details>
+    <details><summary>As perguntas começaram a repetir</summary><p>Todas as perguntas do banco já saíram nessa partida, então o jogo recomeça a lista. Importe mais perguntas para turmas grandes.</p></details>
+  </section>
+
+  <div class="links">
+    <a class="btn" href="telao">🖥️ Abrir o telão do professor</a>
+    <a class="btn sec" href="perguntas">📝 Banco de perguntas</a>
+    <button class="btn sec" onclick="print()">🖨️ Imprimir este manual</button>
+  </div>
+  <div class="rodape">Copa Botânica · Marista Asa Sul · 2026</div>
+</div>
+<script src="comum.js"></script>
+<script>
+document.getElementById('topo').innerHTML = `${LOGO}<h1>Copa Botânica</h1><small>Marista Asa Sul · 2026</small>`;
+document.getElementById('polen').innerHTML = Array.from({ length: 12 }, (_, i) => `<i style="left:${(i * 37) % 100}%;animation-duration:${10 + (i % 5) * 3}s;animation-delay:${-(i * 1.8)}s"></i>`).join('');
+</script>
+</body>
+</html>
