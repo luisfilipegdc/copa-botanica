@@ -1,0 +1,159 @@
+/* ==========================================================
+   Torneio Botânico — mobile first
+   Paleta: floresta, musgo, samambaia, broto, pólen, pétala,
+   orvalho, ipê-roxo, terra e papel de herbário.
+   ========================================================== */
+:root {
+  --floresta: #0c2617; --floresta2: #123821; --musgo: #2f5d3a; --samambaia: #3f9a5c;
+  --broto: #a8d672; --polen: #f2c230; --polen-escuro: #b88a07; --petala: #e8607a;
+  --orvalho: #3a8fc9; --ipe: #8456c9; --terra: #7a5232; --papel: #f7f2e2; --papel2: #efe6cc;
+  --tinta: #1d2a1f; --suave: #66705f; --erro: #e0566f;
+  /* nomes antigos usados no código */
+  --fundo: var(--floresta); --fundo2: var(--musgo); --folha: var(--samambaia); --folha-clara: var(--broto);
+  --creme: var(--papel); --sol: var(--polen);
+  --opA: var(--petala); --opB: var(--orvalho); --opC: #d99a0b; --opD: var(--ipe); --opE: #2e9a6a; --opF: #c2557a;
+  --raio: 20px;
+  --folhas: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'%3E%3Cg fill='none' stroke='%23a8d672' stroke-width='2' opacity='.9'%3E%3Cpath d='M10 210 C60 150 110 100 210 10'/%3E%3C/g%3E%3Cg fill='%233f9a5c'%3E%3Cpath d='M50 165 C30 140 35 115 55 100 C70 125 70 145 50 165Z'/%3E%3Cpath d='M58 160 C85 165 105 150 112 130 C85 128 70 140 58 160Z'/%3E%3Cpath d='M95 118 C78 92 85 68 108 55 C120 82 115 102 95 118Z'/%3E%3Cpath d='M103 112 C130 118 150 104 158 84 C130 80 115 94 103 112Z'/%3E%3Cpath d='M140 72 C128 50 136 30 156 20 C166 44 160 60 140 72Z'/%3E%3Cpath d='M146 68 C168 72 184 60 190 44 C168 40 154 52 146 68Z'/%3E%3C/g%3E%3C/svg%3E");
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; overflow-x: hidden; overflow-x: clip; max-width: 100%; }
+body {
+  font-family: 'Nunito', system-ui, -apple-system, sans-serif; color: var(--papel);
+  background:
+    radial-gradient(900px 520px at 15% -10%, #2b6b40 0%, transparent 60%),
+    radial-gradient(700px 500px at 110% 105%, #1f5533 0%, transparent 60%),
+    linear-gradient(180deg, var(--floresta2), var(--floresta));
+  background-attachment: fixed; -webkit-tap-highlight-color: transparent;
+}
+/* ramos de folhas nos cantos */
+body::before, body::after {
+  content: ''; position: fixed; width: 210px; height: 210px; pointer-events: none; z-index: 0;
+  background: var(--folhas) no-repeat center / contain; opacity: .22;
+}
+body::before { left: -40px; bottom: -30px; }
+body::after { right: -40px; top: -30px; transform: rotate(180deg); }
+/* pólen flutuando */
+.polen-ar { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.polen-ar i { position: absolute; bottom: -10px; width: 6px; height: 6px; border-radius: 50%; background: var(--polen); opacity: .0; box-shadow: 0 0 8px var(--polen); animation: sobe linear infinite; }
+@keyframes sobe { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: .55; } 90% { opacity: .4; } 100% { transform: translate(40px, -105vh); opacity: 0; } }
+
+h1, h2, h3, .titulo { font-family: 'Fredoka', 'Nunito', sans-serif; font-weight: 600; margin: 0; letter-spacing: .2px; }
+h1 { font-size: 1.7rem; } h2 { font-size: 1.35rem; }
+button { font: inherit; cursor: pointer; border: 0; }
+input, textarea { font: inherit; }
+a { color: inherit; }
+
+.app {
+  position: relative; z-index: 1; max-width: 520px; margin: 0 auto; min-height: 100vh; min-height: 100dvh;
+  padding: max(14px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+/* cartão = papel de herbário com fita */
+.cartao {
+  position: relative; background: var(--papel); color: var(--tinta); border-radius: 6px 22px 6px 22px;
+  padding: 22px 18px 18px; box-shadow: 0 1px 0 var(--papel2) inset, 0 12px 28px rgba(0,0,0,.28);
+  background-image: radial-gradient(circle at 100% 0, #e8dcb4 0 26px, transparent 27px);
+}
+.cartao::before {
+  content: ''; position: absolute; top: -9px; left: 50%; width: 84px; height: 20px; transform: translateX(-50%) rotate(-2deg);
+  background: #d8e8b8cc; border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,.15);
+}
+.centro { text-align: center; }
+.suave { color: var(--suave); }
+.claro { color: var(--broto); }
+.pequeno { font-size: .85rem; }
+.marca { display: flex; align-items: center; gap: 8px; font-family: 'Fredoka', sans-serif; font-size: 1.05rem; color: var(--broto); }
+.marca b { color: var(--papel); }
+
+/* botões: pólen dourado, cantos de folha */
+.btn {
+  display: block; width: 100%; min-height: 54px; padding: 15px 20px; font-size: 1.1rem; font-weight: 800;
+  background: linear-gradient(180deg, #f8d24a, var(--polen)); color: #3a2a00;
+  border-radius: 6px 20px 6px 20px; box-shadow: 0 5px 0 var(--polen-escuro), 0 10px 20px rgba(0,0,0,.2);
+  transition: transform .08s, box-shadow .08s;
+}
+.btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--polen-escuro); }
+.btn:disabled { opacity: .55; }
+.btn.sec { background: #ffffff14; color: var(--papel); box-shadow: none; border: 1.5px dashed #a8d67288; }
+.campo { width: 100%; min-height: 56px; padding: 15px 16px; border-radius: 6px 18px 6px 18px; border: 2px solid #cfd8bd; font-size: 1.15rem; background: #fffdf6; color: var(--tinta); }
+.campo:focus { outline: none; border-color: var(--samambaia); box-shadow: 0 0 0 4px #3f9a5c33; }
+.erro-msg { color: var(--erro); font-weight: 800; min-height: 1.2em; margin: 8px 0; }
+
+.avatar { font-size: 4.4rem; line-height: 1; filter: drop-shadow(0 6px 10px rgba(0,0,0,.3)); }
+.avatar.grande { font-size: 6.5rem; }
+.pulsa { animation: pulsa 1.8s ease-in-out infinite; display: inline-block; }
+@keyframes pulsa { 50% { transform: scale(1.08) rotate(-3deg); } }
+.surge { animation: surge .5s cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes surge { from { transform: scale(.7) translateY(10px); opacity: 0; } }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.chip { background: #ffffff14; border: 1px solid #a8d67244; padding: 7px 12px; border-radius: 4px 14px 4px 14px; font-size: .92rem; }
+
+/* trilha evolutiva */
+.trilha { display: flex; justify-content: center; align-items: center; gap: 4px; font-size: 1.7rem; margin: 8px 0; }
+.trilha span { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: #3f9a5c22; }
+.trilha span.apagado { opacity: .35; filter: grayscale(1); background: transparent; }
+.trilha i { font-style: normal; font-size: .9rem; color: var(--samambaia); }
+
+/* duelo */
+.duelo { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; text-align: center; }
+.duelo .lado { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.duelo .nome { font-weight: 800; font-size: 1.1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.duelo .vs { font-family: 'Fredoka'; font-size: 1.5rem; color: #fff; background: var(--petala); width: 52px; height: 52px; display: grid; place-items: center; border-radius: 0 50% 0 50%; transform: rotate(-8deg); box-shadow: 0 4px 0 #b9435a; }
+.placar { font-family: 'Fredoka'; font-size: 2rem; }
+.mini-duelo { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: #0000002e; border: 1px solid #a8d67233; border-radius: 4px 16px 4px 16px; padding: 10px 14px; font-weight: 800; }
+.mini-duelo .pl { font-family: 'Fredoka'; font-size: 1.35rem; color: var(--polen); white-space: nowrap; }
+
+/* pergunta */
+.tema { display: inline-block; background: var(--samambaia); color: #fff; font-weight: 800; font-size: .74rem; padding: 4px 11px; border-radius: 3px 12px 3px 12px; text-transform: uppercase; letter-spacing: .6px; }
+.enunciado { font-size: 1.08rem; line-height: 1.5; white-space: pre-line; margin-top: 10px; }
+.opcoes { display: grid; gap: 10px; }
+.op {
+  display: flex; gap: 12px; align-items: center; text-align: left; width: 100%; min-height: 60px; color: #fff;
+  padding: 12px 14px; border-radius: 6px 20px 6px 20px; font-size: 1rem; line-height: 1.35; font-weight: 700;
+  box-shadow: 0 4px 0 rgba(0,0,0,.28); transition: transform .08s, opacity .2s;
+}
+.op:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,.28); }
+/* letra dentro de uma folha */
+.op .letra { flex: none; width: 34px; height: 34px; border-radius: 0 60% 0 60%; background: #ffffff38; display: grid; place-items: center; font-family: 'Fredoka'; font-size: 1.05rem; border: 1.5px solid #ffffff66; }
+.op0 { background: var(--opA); } .op1 { background: var(--opB); } .op2 { background: var(--opC); } .op3 { background: var(--opD); } .op4 { background: var(--opE); } .op5 { background: var(--opF); }
+.op.apagada { opacity: .32; }
+.op.escolhida { outline: 3px solid var(--papel); outline-offset: 3px; }
+.op.certa { outline: 3px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 9px #a8d67266; }
+
+/* tempo = caule que vai murchando, com folhinha na ponta */
+.barra-tempo { --p: 1; height: 14px; border-radius: 99px; background: #0000003a; position: relative; border: 1px solid #a8d67233; }
+.barra-tempo::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--p) * 100%); background: linear-gradient(90deg, var(--musgo), var(--samambaia), var(--broto)); border-radius: 99px; transition: width .15s linear; }
+.barra-tempo::before { content: '🍃'; position: absolute; top: 50%; left: calc(var(--p) * 100%); transform: translate(-50%, -50%); font-size: 20px; z-index: 1; transition: left .15s linear; }
+.barra-tempo.urgente::after { background: linear-gradient(90deg, var(--terra), #c98a3a); }
+.barra-tempo.urgente::before { content: '🍂'; }
+
+.resultado { font-family: 'Fredoka'; font-size: 1.9rem; }
+.bom { color: #2b8a4e; } .ruim { color: var(--erro); }
+.explica { background: #e9f3dc; border-left: 5px solid var(--samambaia); padding: 12px 14px; border-radius: 4px 14px 4px 14px; line-height: 1.5; }
+.fogo { background: #ff9f4322; color: #ffb36b; border: 1px solid #ff9f4366; padding: 6px 12px; border-radius: 999px; font-weight: 800; display: inline-block; }
+.cartao .fogo { color: #b25d00; background: #ffe7c9; }
+.contagem { font-family: 'Fredoka'; font-size: 6rem; color: var(--samambaia); line-height: 1; }
+.confete { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+.rodape { margin-top: auto; text-align: center; font-size: .8rem; color: #ffffff59; padding-top: 8px; }
+.lista-rank { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.lista-rank li { display: flex; gap: 10px; align-items: center; background: #ffffff10; padding: 9px 12px; border-radius: 4px 14px 4px 14px; }
+.lista-rank li.eu { background: #f2c23033 !important; outline: 1.5px solid var(--polen); }
+.lista-rank .pos { font-family: 'Fredoka'; width: 30px; color: var(--polen-escuro); }
+.lista-rank .pts { margin-left: auto; font-weight: 800; color: var(--broto); white-space: nowrap; }
+
+@media (min-width: 700px) {
+  body::before, body::after { width: 320px; height: 320px; opacity: .25; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* marca: Copa Botânica Marista Asa Sul 2026 */
+.marca .logo { width: 46px; height: 48px; flex: none; filter: drop-shadow(0 3px 6px rgba(0,0,0,.35)); }
+.marca b { display: block; font-size: 1.1rem; line-height: 1.1; }
+.marca small { display: block; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: .72rem; letter-spacing: .8px; text-transform: uppercase; color: var(--broto); }
+.logo-grande { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.logo-grande .logo { width: 150px; height: 158px; filter: drop-shadow(0 8px 16px rgba(0,0,0,.35)); }
+.logo-grande h1 { font-size: 1.9rem; color: var(--papel); }
+.logo-grande small { font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--broto); font-size: .8rem; }

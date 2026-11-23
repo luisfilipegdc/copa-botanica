@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Telão · Copa Botânica</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌳</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+<style>
+  body { overflow-x: hidden; }
+  .tela { min-height: 100vh; display: flex; flex-direction: column; padding: 18px 28px 90px; gap: 18px; position: relative; z-index: 1; }
+  .topo { display: flex; align-items: center; gap: 16px; }
+  .topo .marca { font-size: 1.5rem; }
+  .topo .info { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+  .selo { background: #ffffff14; border: 1px solid #ffffff26; padding: 6px 14px; border-radius: 999px; font-weight: 800; }
+  .selo b { color: var(--sol); }
+  .controles { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 10px; padding: 12px 20px; background: #0b2316ee; backdrop-filter: blur(6px); border-top: 1px solid #ffffff1f; z-index: 10; flex-wrap: wrap; align-items: center; }
+  .controles .btn { width: auto; padding: 12px 18px; font-size: 1rem; }
+  .controles.oculto { transform: translateY(100%); opacity: 0; }
+  .controles .dica { margin-left: auto; color: #ffffff66; font-size: .85rem; }
+  .lobby { display: grid; grid-template-columns: minmax(280px, 420px) 1fr; gap: 28px; flex: 1; align-items: start; }
+  .qr { background: var(--creme); color: var(--tinta); border-radius: 24px; padding: 20px; text-align: center; }
+  .qr img { width: 100%; image-rendering: pixelated; border-radius: 8px; }
+  .codigo { font-family: 'Fredoka'; font-size: 4rem; letter-spacing: 10px; color: var(--fundo2); line-height: 1; margin-top: 8px; }
+  .nuvem { display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; }
+  .nuvem .chip { font-size: 1.15rem; padding: 10px 16px; cursor: pointer; animation: surge .5s cubic-bezier(.2,1.4,.4,1) both; }
+  .nuvem .chip:hover { background: var(--erro); text-decoration: line-through; }
+  .contador { font-family: 'Fredoka'; font-size: 5rem; color: var(--sol); line-height: 1; }
+  .grade-duelos { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .grade-duelos.mini { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; font-size: .9rem; }
+  .cd { background: #ffffff12; border: 1px solid #ffffff22; border-radius: 14px; padding: 10px 14px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
+  .cd .n { font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cd .n.dir { text-align: right; }
+  .cd .pl { font-family: 'Fredoka'; color: var(--sol); font-size: 1.2rem; white-space: nowrap; }
+  .cd .perdeu { opacity: .35; text-decoration: line-through; }
+  .cd .ganhou { color: var(--folha-clara); }
+  .pergunta-telao { font-size: clamp(1.3rem, 2.3vw, 2.2rem); line-height: 1.35; white-space: pre-line; }
+  .ops-telao { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .ops-telao .op { font-size: clamp(1rem, 1.6vw, 1.5rem); padding: 18px; position: relative; overflow: hidden; cursor: default; }
+  .ops-telao .op .pct { position: absolute; left: 0; bottom: 0; height: 6px; background: #ffffffcc; }
+  .ops-telao .op .num { margin-left: auto; font-family: 'Fredoka'; padding-left: 10px; }
+  .gigante { font-family: 'Fredoka'; font-size: clamp(3rem, 9vw, 8rem); color: var(--sol); line-height: 1; text-align: center; }
+  .classificados { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+  .classificados .cl { background: var(--creme); color: var(--tinta); border-radius: 16px; padding: 12px 18px; font-weight: 800; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; animation: surge .6s both; }
+  .login { max-width: 460px; margin: 10vh auto; }
+  @media (max-width: 800px) { .lobby { grid-template-columns: 1fr; } .ops-telao { grid-template-columns: 1fr; } .tela { padding: 14px 16px 120px; } }
+</style>
+</head>
+<body>
+<div class="polen-ar" id="polen"></div>
+<div id="raiz"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="comum.js"></script>
+<script>
+// ======================================================================
+// O telão é o "juiz": guarda a chave, cronometra e corrige as respostas.
+// Tudo que os alunos veem é o estado público salvo no Supabase.
+// ======================================================================
+const qs = new URLSearchParams(location.search);
+let SALA = (qs.get('sala') || '').toUpperCase();
+let SEG = null;
+let E = null;                 // estado público do jogo
+let PERG = [], PMAP = {};     // perguntas com gabarito (só o telão tem)
+let JOG = {};                 // id -> segundos desde a última vez que o celular falou com o servidor
+let RESP = {};                // id -> [opção, ms] da pergunta atual
+let controlesOcultos = false, erroMsg = '';
+const raiz = document.getElementById('raiz');
+
+const PERGS_DUELO = 3, PERGS_FINAL = 5, EXTRAS = 2;
+const iso = (t) => new Date(t).toISOString();
+const embaralhar = (a) => { for (let i = a.length - 1; i > 0; i--) { const k = Math.floor(Math.random() * (i + 1)); [a[i], a[k]] = [a[k], a[i]]; } return a; };
+
+// ---------------- entrada do professor ----------------
+function telaLogin(msg) {
+  let ultima = null; try { ultima = JSON.parse(localStorage.getItem('tb_host_ultima') || 'null'); } catch (e) {}
+  raiz.innerHTML = `<div class="app login">
+    ${MARCA}<p class="claro" style="margin:0">Telão do professor</p>
+    <div class="cartao">
+      <h2>Abrir uma sala nova</h2>
+      <p class="suave">Digite a senha do professor. O telão mostra o QR code para os alunos entrarem.</p>
+      <input class="campo" id="senha" type="password" placeholder="Senha do professor">
+      <p class="erro-msg">${esc(msg || '')}</p>
+      <button class="btn" id="criar">Criar sala 🌱</button>
+      ${ultima ? `<button class="btn sec" style="margin-top:10px;color:var(--tinta);border-color:#0002" onclick="location.search='?sala=${esc(ultima)}'">Voltar para a sala ${esc(ultima)}</button>` : ''}
+      <p class="suave pequeno" style="margin-top:14px">Banco de perguntas: <a href="perguntas.html">ver e importar perguntas</a></p>
+    </div></div>`;
+  const criar = async () => {
+    const senha = document.getElementById('senha').value;
+    try {
+      const r = await rpc('criar_jogo', { p_senha: senha });
+      localStorage.setItem('tb_host_' + r.codigo, r.segredo);
+      localStorage.setItem('tb_host_ultima', r.codigo);
+      location.search = '?sala=' + r.codigo;
+    } catch (e) { telaLogin(e.message); }
+  };
+  document.getElementById('criar').onclick = criar;
+  document.getElementById('senha').onkeydown = (e) => e.key === 'Enter' && criar();
+}
+
+// ---------------- salvar estado público ----------------
+let salvando = false, deNovo = false;
+async function salvar() {
+  if (salvando) { deNovo = true; return; }
+  salvando = true;
+  try {
+    const t0 = Date.now();
+    const r = await rpc('host_salvar', { p_codigo: SALA, p_segredo: SEG, p_estado: E });
+    ajustarRelogio(r.agora, t0); erroMsg = '';
+  } catch (e) { erroMsg = 'Falha ao salvar: ' + e.message; }
+  salvando = false;
+  if (deNovo) { deNovo = false; salvar(); }
+}
+
+// ---------------- jogadores ----------------
+let ultJog = 0;
+async function sincJogadores() {
+  ultJog = agoraSrv();
+  const lista = await rpc('host_jogadores', { p_codigo: SALA, p_segredo: SEG });
+  let mudou = false, novos = 0;
+  for (const [idNum, nome, removido, visto] of lista) {
+    const id = String(idNum);
+    JOG[id] = visto;
+    const p = E.j[id];
+    if (removido) { if (p && !p.x) { p.x = 1; p.v = 0; mudou = true; } continue; }
+    if (!p) {
+      const noLobby = E.fase === 'lobby';
+      E.j[id] = { n: nome, e: 0, v: noLobby ? 1 : 0, p: 0, a: 0, s: 0, g: 0, el: null, t: noLobby ? 0 : 1 };
+      mudou = true; novos++;
+    }
+  }
+  if (novos && E.fase === 'lobby') som('entrou');
+  if (mudou) salvar();
+}
+const ativos = () => Object.entries(E.j).filter(([, p]) => !p.x);
+const conectados = () => ativos().filter(([id]) => (JOG[id] ?? 999) <= 20).map(([id]) => id);
+const vivos = () => ativos().filter(([, p]) => p.v).map(([id]) => id);
+
+// ---------------- montar a chave ----------------
+function montarRodada() {
+  let lista;
+  if (!E.rodada) lista = embaralhar(vivos());
+  else lista = (E.ordem || []).filter((id) => E.j[id] && E.j[id].v && !E.j[id].x);
+  E.evento = null;
+  if (lista.length % 2 === 1 && lista.length > 1 && E.rodada > 0) {
+    // repescagem: o melhor da torcida em pólen volta
+    const cand = ativos().filter(([, p]) => !p.v && p.el).sort((a, b) => (b[1].p - a[1].p) || (b[1].a - a[1].a))[0];
+    if (cand) { cand[1].v = 1; cand[1].r = (cand[1].r || 0) + 1; lista.push(cand[0]); E.evento = { tipo: 'repescagem', id: cand[0] }; }
+  }
+  let passe = null;
+  if (lista.length % 2 === 1 && lista.length > 1) passe = lista.splice(Math.floor(Math.random() * lista.length), 1)[0];
+  const duelos = [];
+  for (let i = 0; i + 1 < lista.length; i += 2) duelos.push({ a: lista[i], b: lista[i + 1], pa: 0, pb: 0, ta: 0, tb: 0, w: null });
+  if (passe) duelos.push({ a: passe, b: null, pa: 0, pb: 0, ta: 0, tb: 0, w: passe });
+  E.duelos = duelos;
+  E.rodada = (E.rodada || 0) + 1;
+  E.k = (duelos.length === 1 && !passe) ? PERGS_FINAL : PERGS_DUELO;
+  E.q_num = 0; E.q = null; E.revelacao = null; E.ref = null;
+  E.fase = 'chave';
+}
+
+// ---------------- perguntas ----------------
+function prepararPergunta() {
+  let pool = PERG.filter((q) => !(E.usadas || []).includes(q.id));
+  if (!pool.length) { E.usadas = []; pool = PERG.slice(); erroMsg = 'Todas as perguntas já saíram: recomeçando o banco.'; }
+  const q = pool[Math.floor(Math.random() * pool.length)];
+  E.usadas = [...(E.usadas || []), q.id];
+  E.morte_subita = E.q_num >= E.k;
+  E.ref = `${E.rodada}-${E.q_num}-${q.id}-${Math.random().toString(36).slice(2, 7)}`;
+  E.q = { id: q.id, tema: q.tema, texto: q.texto, opcoes: q.opcoes };
+  const letras = q.texto.length + q.opcoes.join('').length;
+  E.tempo = Math.round(Math.max(20, Math.min(60, 12 + letras / 20)));
+  E.revelacao = null; E.respondidos = []; RESP = {};
+  E.fase = 'preparar'; E.prep_fim = iso(agoraSrv() + 3500);
+}
+function comecarPergunta() {
+  const t = agoraSrv();
+  E.q_inicio = iso(t); E.q_fim = iso(t + E.tempo * 1000);
+  E.fase = 'pergunta'; som('inicio');
+}
+let ultResp = 0, ultSalvoResp = 0;
+async function lerRespostas() {
+  ultResp = agoraSrv();
+  const arr = await rpc('host_respostas', { p_codigo: SALA, p_segredo: SEG, p_ref: E.ref });
+  RESP = {}; for (const [id, op, t] of arr) RESP[String(id)] = [op, t];
+  const lista = Object.keys(RESP).sort();
+  if (lista.length !== (E.respondidos || []).length && agoraSrv() - ultSalvoResp > 1500) {
+    E.respondidos = lista; ultSalvoResp = agoraSrv(); salvar();
+  }
+}
+function todosResponderam() {
+  const c = conectados();
+  return c.length > 0 && agoraSrv() - ms(E.q_inicio) > 3000 && c.every((id) => RESP[id]);
+}
+async function encerrarPergunta() {
+  await lerRespostas();
+  const q = PMAP[E.q.id], certa = q.resposta, total = E.tempo * 1000;
+  const stats = q.opcoes.map(() => 0);
+  for (const [id, p] of ativos()) {
+    const r = RESP[id];
+    if (r) stats[r[0]] = (stats[r[0]] || 0) + 1;
+    if (r && r[0] === certa) {
+      p.g = 100 + Math.round(50 * Math.max(0, 1 - r[1] / total));
+      p.p += p.g; p.a += 1; p.s = (p.s || 0) + 1;
+    } else { p.g = 0; p.s = 0; }
+  }
+  for (const d of E.duelos) {
+    if (d.w || !d.b) continue;
+    const ra = RESP[d.a], rb = RESP[d.b];
+    const ca = !!ra && ra[0] === certa, cb = !!rb && rb[0] === certa;
+    if (E.morte_subita) {
+      if (ca && cb) { if (ra[1] <= rb[1]) d.pa++; else d.pb++; }
+      else if (ca) d.pa++; else if (cb) d.pb++;
+    } else {
+      if (ca) { d.pa++; d.ta += ra[1]; }
+      if (cb) { d.pb++; d.tb += rb[1]; }
+    }
+  }
+  E.revelacao = { correta: certa, explicacao: q.explicacao || '', stats, total: Object.keys(RESP).length };
+  E.respondidos = Object.keys(RESP);
+  E.fase = 'revelacao';
+  E.rev_fim = iso(agoraSrv() + Math.max(9000, Math.min(18000, 6000 + (q.explicacao || '').length * 45)));
+  som('certo');
+}
+function avancar() {
+  E.q_num++;
+  for (const d of E.duelos) {
+    if (d.w || !d.b) continue;
+    const A = E.j[d.a], B = E.j[d.b];
+    if (!A || A.x) { d.w = d.b; continue; }
+    if (!B || B.x) { d.w = d.a; continue; }
+    const resta = Math.max(0, E.k - E.q_num);
+    if (E.q_num < E.k) { if (Math.abs(d.pa - d.pb) > resta) d.w = d.pa > d.pb ? d.a : d.b; }
+    else if (d.pa !== d.pb) d.w = d.pa > d.pb ? d.a : d.b;
+    else if (E.q_num >= E.k + EXTRAS) d.w = d.ta < d.tb ? d.a : d.tb < d.ta ? d.b : (Math.random() < .5 ? d.a : d.b);
+  }
+  if (E.duelos.some((d) => !d.w)) prepararPergunta(); else fimRodada();
+}
+function fimRodada() {
+  const venc = [];
+  for (const d of E.duelos) {
+    const w = d.w, l = d.b ? (w === d.a ? d.b : d.a) : null;
+    if (E.j[w]) { E.j[w].e = (E.j[w].e || 0) + 1; venc.push(w); }
+    if (l && E.j[l]) { E.j[l].v = 0; E.j[l].el = E.rodada; }
+  }
+  E.ordem = venc;
+  E.historico = [...(E.historico || []), E.duelos.map((d) => [d.a, d.b, d.w, d.pa, d.pb])];
+  if (venc.length <= 1) { E.campeao = venc[0] || null; E.fase = 'campeao'; som('fanfarra'); setTimeout(() => confete(10), 300); }
+  else { E.fase = 'fim_rodada'; som('fanfarra'); }
+}
+
+// ---------------- relógio do juiz ----------------
+let ocupado = false;
+async function tick() {
+  if (ocupado || !E) return;
+  ocupado = true;
+  try {
+    const t = agoraSrv();
+    if (t - ultJog > 2500) await sincJogadores();
+    if (E.fase === 'preparar' && t >= ms(E.prep_fim)) { comecarPergunta(); await salvar(); }
+    else if (E.fase === 'pergunta') {
+      if (t - ultResp > 1000) await lerRespostas();
+      if (t >= ms(E.q_fim) + 800 || todosResponderam()) { await encerrarPergunta(); await salvar(); }
+    } else if (E.fase === 'revelacao' && !E.pausado && t >= ms(E.rev_fim)) { avancar(); await salvar(); }
+  } catch (e) { erroMsg = e.message; }
+  ocupado = false;
+  desenhar();
+}
+
+// ---------------- ações do professor ----------------
+async function acao(nome, arg) {
+  if (ocupado) { setTimeout(() => acao(nome, arg), 200); return; }
+  ocupado = true;
+  try {
+    if (nome === 'fechar') {
+      await sincJogadores();
+      if (vivos().length < 2) { alert('Precisa de pelo menos 2 alunos na sala.'); return; }
+      montarRodada();
+    }
+    if (nome === 'comecar') prepararPergunta();
+    if (nome === 'encerrar' && E.fase === 'pergunta') await encerrarPergunta();
+    if (nome === 'proxima' && E.fase === 'revelacao') avancar();
+    if (nome === 'pausar') E.pausado = !E.pausado;
+    if (nome === 'rodada') montarRodada();
+    if (nome === 'remover') {
+      const p = E.j[arg];
+      if (!p || !confirm(`Remover "${p.n}" da sala?`)) return;
+      await rpc('host_remover', { p_codigo: SALA, p_segredo: SEG, p_jogador: +arg });
+      p.x = 1; p.v = 0;
+    }
+    if (nome === 'nova') { if (confirm('Encerrar e abrir uma sala nova?')) { location.search = ''; } return; }
+    await salvar();
+  } catch (e) { erroMsg = e.message; }
+  finally { ocupado = false; desenhar(); }
+}
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'h' || e.key === 'H') { controlesOcultos = !controlesOcultos; desenhar(); }
+  if (e.key === 'f' || e.key === 'F') document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+});
+
+// ---------------- desenho ----------------
+const linkAluno = () => `${location.origin}/?sala=${SALA}`;
+function qrImg() {
+  try { const q = qrcode(0, 'M'); q.addData(linkAluno()); q.make(); return `<img alt="QR code da sala" src="${q.createDataURL(10, 2)}">`; }
+  catch (e) { return `<p style="font-size:1.4rem;word-break:break-all">${esc(linkAluno())}</p>`; }
+}
+let qrCache = '';
+function cartaoDuelo(d, mini) {
+  const A = E.j[d.a] || { n: '?' }, B = d.b ? (E.j[d.b] || { n: '?' }) : null;
+  const cls = (id) => (d.w ? (d.w === id ? 'ganhou' : 'perdeu') : '');
+  if (!B) return `<div class="cd"><span class="n ${cls(d.a)}">${estagio(A.e).e} ${esc(curto(A.n))}</span><span class="pl">🌰</span><span class="n dir suave" style="color:#ffffff88">passe livre</span></div>`;
+  return `<div class="cd"><span class="n ${cls(d.a)}">${estagio(A.e).e} ${esc(curto(A.n))}</span>
+    <span class="pl">${d.pa} × ${d.pb}</span><span class="n dir ${cls(d.b)}">${esc(curto(B.n))} ${estagio(B.e).e}</span></div>`;
+}
+
+function desenhar() {
+  if (!E) return;
+  const f = E.fase, nJog = ativos().length, nVivos = vivos().length;
+  const topo = `<div class="topo">${MARCA}
+    <div class="info">
+      ${f !== 'lobby' ? `<span class="selo">Rodada <b>${E.rodada}</b></span><span class="selo">🌱 <b>${nVivos}</b> na disputa</span>` : ''}
+      <span class="selo">👥 <b>${nJog}</b> jogando</span>
+      <span class="selo">Sala <b>${SALA}</b></span>
+    </div></div>`;
+  let corpo = '', botoes = '';
+
+  if (f === 'lobby') {
+    if (!qrCache) qrCache = qrImg();
+    const nomes = ativos().map(([id, p]) => `<span class="chip" data-remover="${id}" title="Clique para remover">🌱 ${esc(p.n)}</span>`).join('');
+    corpo = `<div class="lobby">
+      <div class="qr">${qrCache}
+        <p style="margin:6px 0 0;font-weight:800">Aponte a câmera do celular</p>
+        <p class="suave" style="margin:2px 0">ou entre em <b>${esc(location.host)}</b> com o código</p>
+        <div class="codigo">${SALA}</div></div>
+      <div>
+        <div class="logo-grande" style="flex-direction:row;gap:18px;margin-bottom:12px">${LOGO}<div><h1 style="font-size:3rem">Copa Botânica</h1><small style="font-size:1.1rem">Marista Asa Sul · 2026</small></div></div>
+        <div style="display:flex;align-items:baseline;gap:14px"><span class="contador">${nJog}</span><h2>botânico${nJog === 1 ? '' : 's'} na arena</h2></div>
+        <p class="claro" style="font-size:1.2rem">Cada vitória = uma novidade evolutiva: 🌱 musgo › 🌿 samambaia › 🌲 pinheiro › 🌸 flor › 🍎 fruto</p>
+        <div class="nuvem">${nomes || '<p class="suave" style="color:#ffffff88">Esperando o primeiro aluno…</p>'}</div>
+      </div></div>`;
+    botoes = `<button class="btn" data-acao="fechar">🌿 Fechar sala e sortear duelos (${nJog})</button>
+      <span class="suave pequeno" style="color:#ffffff88">Clique num nome para remover · ${PERG.length} perguntas no banco</span>`;
+  } else if (f === 'chave') {
+    const rep = E.evento && E.evento.tipo === 'repescagem' ? E.j[E.evento.id] : null;
+    corpo = `<div class="centro"><h1 style="font-size:2.6rem">${E.k === PERGS_FINAL ? '🏆 GRANDE FINAL' : `Rodada ${E.rodada}`}</h1>
+      <p class="claro" style="font-size:1.2rem">${E.duelos.filter((d) => d.b).length} duelo(s) · melhor de ${E.k} · empate = morte súbita ⚡</p>
+      ${rep ? `<p class="fogo" style="font-size:1.3rem">🌱🌧️ REPESCAGEM: ${esc(rep.n)} rebrotou com ${rep.p} 🌼 e volta para a Copa!</p>` : ''}</div>
+      <div class="grade-duelos">${E.duelos.map((d) => cartaoDuelo(d)).join('')}</div>`;
+    botoes = `<button class="btn" data-acao="comecar">▶ Começar rodada</button>`;
+  } else if (f === 'preparar') {
+    corpo = `<div style="flex:1;display:grid;place-items:center;text-align:center"><div>
+      <h1 style="font-size:3rem">${E.morte_subita ? '⚡ MORTE SÚBITA' : `Pergunta ${E.q_num + 1} de ${E.k}`}</h1>
+      <div class="gigante" data-fim="${ms(E.prep_fim)}">3</div></div></div>`;
+  } else if (f === 'pergunta' || f === 'revelacao') {
+    const rv = f === 'revelacao' ? E.revelacao : null;
+    const nResp = f === 'pergunta' ? Object.keys(RESP).length : rv.total;
+    corpo = `<div style="display:flex;gap:12px;align-items:center">
+        <span class="tema">${esc(E.q.tema)}</span>${E.morte_subita ? '<span class="tema" style="background:var(--sol)">⚡ morte súbita</span>' : `<span class="selo">Pergunta <b>${E.q_num + 1}</b> de ${E.k}</span>`}
+        <span class="selo" style="margin-left:auto">✋ <b>${nResp}</b> de ${conectados().length || nJog} responderam</span>
+        ${f === 'pergunta' ? `<span class="gigante" style="font-size:3rem" data-fim="${ms(E.q_fim)}"></span>` : ''}</div>
+      ${f === 'pergunta' ? `<div class="barra-tempo" style="height:16px" data-ini="${ms(E.q_inicio)}" data-fim="${ms(E.q_fim)}"></div>` : ''}
+      <div class="pergunta-telao">${esc(E.q.texto)}</div>
+      <div class="ops-telao">${E.q.opcoes.map((t, i) => {
+        const pct = rv && rv.total ? Math.round(100 * (rv.stats[i] || 0) / rv.total) : 0;
+        return `<div class="op op${i} ${rv ? (i === rv.correta ? 'certa' : 'apagada') : ''}"><span class="letra">${LETRAS[i]}</span><span>${esc(t)}</span>
+          ${rv ? `<span class="num">${pct}%</span><span class="pct" style="width:${pct}%"></span>` : ''}</div>`;
+      }).join('')}</div>
+      ${rv && rv.explicacao ? `<div class="cartao" style="font-size:1.3rem"><b>🪴 Por quê?</b> ${esc(rv.explicacao)}</div>` : ''}
+      ${rv ? `<div class="grade-duelos mini">${E.duelos.filter((d) => d.b).map((d) => cartaoDuelo(d, true)).join('')}</div>` : ''}`;
+    botoes = f === 'pergunta'
+      ? `<button class="btn sec" data-acao="encerrar">⏹ Encerrar pergunta agora</button>`
+      : `<button class="btn" data-acao="proxima">⏭ Próxima</button>
+         <button class="btn sec" data-acao="pausar">${E.pausado ? '▶ Continuar sozinho' : '⏸ Pausar para explicar'}</button>
+         ${E.pausado ? '' : `<span class="selo">segue em <b data-fim="${ms(E.rev_fim)}"></b>s</span>`}`;
+  } else if (f === 'fim_rodada') {
+    const venc = E.duelos.map((d) => d.w).filter(Boolean);
+    const s = estagio(Math.max(...venc.map((id) => E.j[id].e)));
+    const torcida = ranking(E).filter((p) => !p.v && p.el).slice(0, 3);
+    corpo = `<div class="centro"><p class="claro" style="font-size:1.3rem;margin:0">Fim da rodada ${E.rodada}: ${venc.length} classificados evoluíram para</p>
+        <div class="avatar grande pulsa" style="margin:10px 0">${s.e}</div><h1 style="font-size:3rem">${s.nome}</h1>
+        <p style="font-size:1.5rem;font-weight:800">${s.ganho}</p></div>
+      <div class="classificados">${venc.map((id) => `<div class="cl">${estagio(E.j[id].e).e} ${esc(curto(E.j[id].n))}</div>`).join('')}</div>
+      ${venc.length % 2 === 1 && torcida.length ? `<p class="centro claro" style="font-size:1.2rem">Número ímpar! Quem lidera a torcida volta na repescagem: ${torcida.map((p) => `<b>${esc(curto(p.n))}</b> (${p.p} 🌼)`).join(' · ')}</p>` : ''}`;
+    botoes = `<button class="btn" data-acao="rodada">🌱 Sortear próxima rodada</button>`;
+  } else if (f === 'campeao') {
+    const c = E.j[E.campeao] || { n: '—', p: 0 }, rk = ranking(E).slice(0, 10);
+    corpo = `<div class="centro"><div class="avatar grande pulsa">🏆</div>
+        <p class="claro" style="font-size:1.4rem;margin:0">Campeão Botânico</p><h1 style="font-size:4rem">${esc(c.n)}</h1>
+        <p style="font-size:1.3rem">${c.p} 🌼 de pólen · ${c.a} acertos</p></div>
+      <div class="cartao" style="max-width:720px;margin:0 auto;width:100%"><h2 style="margin-bottom:10px">🌼 Ranking de pólen (todo mundo que jogou)</h2>
+        <ol class="lista-rank">${rk.map((p, i) => `<li style="background:#0f2e1d0d"><span class="pos">${i + 1}º</span><span>${estagio(p.e).e} ${esc(p.n)}</span><span class="pts" style="color:#2f7a4a">${p.p} 🌼</span></li>`).join('')}</ol></div>`;
+    botoes = `<button class="btn sec" data-acao="nova">🌱 Nova sala</button>`;
+  }
+  const html = `<div class="tela">${topo}${erroMsg ? `<p class="erro-msg">${esc(erroMsg)}</p>` : ''}${corpo}</div>
+    <div class="controles ${controlesOcultos ? 'oculto' : ''}">${botoes}<span class="dica">H esconde os botões · F tela cheia</span></div>`;
+  if (html !== ultimoHtml) { raiz.innerHTML = html; ultimoHtml = html; }
+}
+let ultimoHtml = '';
+document.addEventListener('click', (ev) => {
+  const a = ev.target.closest('[data-acao]'); if (a) return acao(a.dataset.acao);
+  const r = ev.target.closest('[data-remover]'); if (r) return acao('remover', r.dataset.remover);
+});
+
+document.getElementById('polen').innerHTML = Array.from({length: 22}, (_, i) => `<i style="left:${(i*37)%100}%;animation-duration:${10+(i%5)*3}s;animation-delay:${-(i*1.9)}s"></i>`).join('');
+
+// ---------------- início ----------------
+(async function () {
+  if (!SALA) return telaLogin();
+  SEG = localStorage.getItem('tb_host_' + SALA);
+  if (!SEG) return telaLogin('Este computador não abriu a sala ' + SALA + '. Crie uma sala nova.');
+  try {
+    const t0 = Date.now();
+    const d = await rpc('ver_jogo', { p_codigo: SALA });
+    ajustarRelogio(d.agora, t0);
+    E = d.estado && d.estado.j ? d.estado : { fase: 'lobby', j: {}, rodada: 0, usadas: [] };
+    PERG = await rpc('host_perguntas', { p_codigo: SALA, p_segredo: SEG });
+    PMAP = Object.fromEntries(PERG.map((q) => [q.id, q]));
+    if (!PERG.length) erroMsg = 'O banco de perguntas está vazio.';
+    if (E.fase === 'pergunta') await lerRespostas();
+  } catch (e) { return telaLogin(e.message); }
+  desenhar();
+  setInterval(tick, 400);
+  setInterval(desenhar, 1000);
+})();
+</script>
+</body>
+</html>

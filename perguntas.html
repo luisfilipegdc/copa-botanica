@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Banco de Perguntas · Copa Botânica</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+<style>
+  .app { max-width: 900px; }
+  textarea.campo { min-height: 260px; font-size: .95rem; font-family: ui-monospace, Menlo, monospace; }
+  .q { border-top: 1px solid #0001; padding: 12px 0; }
+  .q.off { opacity: .45; }
+  .q ol { margin: 6px 0; padding-left: 22px; }
+  .q li.ok { font-weight: 800; color: #1f7a45; }
+  .linha { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .linha .btn { width: auto; padding: 10px 16px; font-size: .95rem; }
+  .aviso { background: #fff4d6; color: #6b4f00; padding: 8px 12px; border-radius: 10px; margin: 6px 0; }
+  pre.modelo { background: #0f2e1d0f; padding: 12px; border-radius: 10px; white-space: pre-wrap; font-size: .9rem; }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script src="comum.js"></script>
+<script>
+const app = document.getElementById('app');
+let SENHA = sessionStorage.getItem('tb_senha') || '';
+let LISTA = [], PREVIA = null;
+
+// Lê o texto copiado do Word (mesmo formato que a Ana já usa)
+function lerTexto(texto) {
+  const linhas = texto.replace(/[‎‏ ]/g, ' ').split(/\r?\n/).map((l) => l.trim());
+  const itens = [], avisos = [];
+  let bloco = [], tema = '', ultima = null;
+  const fechar = (letra) => {
+    const opIdx = bloco.findIndex((l) => /^[A-F]\)\s*/.test(l));
+    const n = itens.length + avisos.length + 1;
+    if (opIdx < 0) { avisos.push(`Pergunta ${n}: não achei as alternativas "A) … B) …" (somatório e certo/errado precisam virar A/B/C/D).`); bloco = []; return; }
+    let enun = bloco.slice(0, opIdx).filter(Boolean);
+    const numeradas = enun.map((l, i) => (/^\d+\s*[\.\)]/.test(l) ? i : -1)).filter((i) => i >= 0);
+    if (numeradas.length) enun = enun.slice(numeradas[numeradas.length - 1]);
+    enun = enun.map((l, i) => (i === 0 ? l.replace(/^\d+\s*[\.\)]\s*/, '') : l)).filter(Boolean)
+      .map((l) => l.replace(/^[•\-–]\s*/, '• '));
+    const opcoes = [];
+    for (const l of bloco.slice(opIdx)) {
+      const m = l.match(/^([A-F])\)\s*(.*)$/);
+      if (m) opcoes.push(m[2]); else if (l && opcoes.length) opcoes[opcoes.length - 1] += ' ' + l;
+    }
+    const resp = LETRAS.indexOf(letra);
+    if (!enun.length) avisos.push(`Pergunta ${n}: sem enunciado.`);
+    else if (opcoes.length < 2) avisos.push(`Pergunta ${n}: menos de 2 alternativas.`);
+    else if (resp < 0 || resp >= opcoes.length) avisos.push(`Pergunta ${n} ("${enun[0].slice(0, 50)}…"): a RESPOSTA ${letra} não existe nas alternativas.`);
+    else { ultima = { tema: tema || 'Geral', texto: enun.join('\n'), opcoes, resposta: resp, explicacao: '' }; itens.push(ultima); }
+    bloco = [];
+  };
+  for (const l of linhas) {
+    let m;
+    if ((m = l.match(/^TEMA\s*:\s*(.+)$/i))) { tema = m[1].trim(); continue; }
+    if ((m = l.match(/^RESPOSTA\s*:\s*([A-F])\b/i))) { fechar(m[1].toUpperCase()); continue; }
+    if ((m = l.match(/^RESPOSTA\s*:/i))) { avisos.push(`Resposta "${l}" não é uma letra de A a F: pulei essa pergunta.`); bloco = []; ultima = null; continue; }
+    if ((m = l.match(/^POR\s*QU[EÊ]\s*:\s*(.+)$/i))) { if (ultima) ultima.explicacao = m[1].trim(); continue; }
+    bloco.push(l);
+  }
+  return { itens, avisos };
+}
+
+function tela(msg) {
+  if (!SENHA) {
+    app.innerHTML = `${MARCA}<h2>Banco de perguntas</h2><div class="cartao">
+      <h2>Senha do professor</h2><input class="campo" id="s" type="password"><p class="erro-msg">${esc(msg || '')}</p>
+      <button class="btn" id="ok">Entrar</button></div>`;
+    const ir = async () => { SENHA = document.getElementById('s').value; await carregar(); };
+    document.getElementById('ok').onclick = ir; document.getElementById('s').onkeydown = (e) => e.key === 'Enter' && ir();
+    return;
+  }
+  const ativas = LISTA.filter((q) => q.ativa).length;
+  const temas = {}; LISTA.filter((q) => q.ativa).forEach((q) => (temas[q.tema] = (temas[q.tema] || 0) + 1));
+  app.innerHTML = `${MARCA}<p class="claro" style="margin:0">Banco de perguntas · <a href="telao.html">ir para o telão</a></p>
+  <div class="cartao">
+    <h2>Importar perguntas novas</h2>
+    <p class="suave">Copie as perguntas do Word e cole aqui. Formato:</p>
+<pre class="modelo">TEMA: Hormônios vegetais
+1. Qual hormônio estimula o amadurecimento dos frutos?
+A) Auxina
+B) Etileno
+C) Giberelina
+D) Citocinina
+RESPOSTA: B
+POR QUÊ: O etileno é um gás que acelera o amadurecimento. (opcional)</pre>
+    <p class="suave pequeno">Somatório e certo/errado precisam virar alternativas A/B/C/D (ex.: "Quais estão corretas? A) Apenas I e II …").</p>
+    <textarea class="campo" id="txt" placeholder="Cole aqui o texto do Word…"></textarea>
+    <div class="linha" style="margin-top:10px"><button class="btn sec" style="color:var(--tinta);border-color:#0003" id="ver">👀 Conferir</button>
+      ${PREVIA && PREVIA.itens.length ? `<button class="btn" id="imp">✅ Importar ${PREVIA.itens.length} pergunta(s)</button>` : ''}</div>
+    <p class="erro-msg">${esc(msg || '')}</p>
+    ${PREVIA ? `${PREVIA.avisos.map((a) => `<div class="aviso">⚠️ ${esc(a)}</div>`).join('')}
+      ${PREVIA.itens.map((q, i) => cartaoQ(q, 'Prévia ' + (i + 1))).join('')}` : ''}
+  </div>
+  <div class="cartao">
+    <h2>No banco: ${ativas} pergunta(s) ativa(s)</h2>
+    <p class="suave">${Object.entries(temas).map(([t, n]) => `${esc(t)}: ${n}`).join(' · ')}</p>
+    <p class="suave pequeno">Uma rodada usa 3 perguntas (final: 5, mais morte súbita). Para 32 alunos são ~5 rodadas, então o ideal é ter 25 ou mais.</p>
+    ${LISTA.map((q) => cartaoQ(q, '#' + q.id, true)).join('')}
+  </div>`;
+  const txt = document.getElementById('txt');
+  if (PREVIA) txt.value = PREVIA.texto;
+  document.getElementById('ver').onclick = () => { PREVIA = { ...lerTexto(txt.value), texto: txt.value }; tela(); };
+  const imp = document.getElementById('imp');
+  if (imp) imp.onclick = async () => {
+    try { const n = await rpc('prof_importar', { p_senha: SENHA, p_itens: PREVIA.itens, p_origem: 'importado ' + new Date().toLocaleDateString('pt-BR') }); PREVIA = null; await carregar(`${n} pergunta(s) importada(s)! 🌱`); }
+    catch (e) { tela(e.message); }
+  };
+}
+function cartaoQ(q, rotulo, comBotao) {
+  return `<div class="q ${q.ativa === false ? 'off' : ''}"><div class="linha"><b>${esc(rotulo)}</b><span class="tema">${esc(q.tema)}</span>
+    ${comBotao ? `<button class="btn sec" style="margin-left:auto;color:var(--tinta);border-color:#0003" data-id="${q.id}" data-ativa="${q.ativa ? 0 : 1}">${q.ativa ? 'Desativar' : 'Ativar'}</button>` : ''}</div>
+    <div class="enunciado">${esc(q.texto)}</div>
+    <ol type="A">${q.opcoes.map((o, i) => `<li class="${i === q.resposta ? 'ok' : ''}">${esc(o)}${i === q.resposta ? ' ✔' : ''}</li>`).join('')}</ol>
+    ${q.explicacao ? `<div class="explica">${esc(q.explicacao)}</div>` : '<p class="suave pequeno">(sem explicação)</p>'}</div>`;
+}
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-id]'); if (!b) return;
+  try { await rpc('prof_ativar', { p_senha: SENHA, p_id: +b.dataset.id, p_ativa: b.dataset.ativa === '1' }); await carregar(); } catch (er) { tela(er.message); }
+});
+async function carregar(msg) {
+  try { LISTA = await rpc('prof_perguntas', { p_senha: SENHA }); sessionStorage.setItem('tb_senha', SENHA); tela(msg); }
+  catch (e) { SENHA = ''; sessionStorage.removeItem('tb_senha'); tela(e.message); }
+}
+SENHA ? carregar() : tela();
+</script>
+</body>
+</html>

@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f2e1d">
+<title>Copa Botânica · Marista Asa Sul 2026</title>
+<meta name="description" content="Duelos de botânica: evolua de musgo a árvore centenária respondendo perguntas.">
+<meta property="og:title" content="Copa Botânica · Marista Asa Sul 2026 🌳">
+<meta property="og:description" content="Duelos de botânica ao vivo. Vença e evolua: musgo → samambaia → pinheiro → flor → fruto.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌳</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<div class="polen-ar" id="polen"></div>
+<div class="app" id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="comum.js"></script>
+<script>
+const qs = new URLSearchParams(location.search);
+let SALA = (qs.get('sala') || '').toUpperCase().trim();
+const chave = () => 'tb_' + SALA;
+let EU = null;              // {token, id, nome}
+let ESTADO = null, VERSAO = -1;
+const MINHAS = {};          // ref -> opção escolhida
+let ultimoHtml = '', ultimaTela = '', avisoTemp = '';
+const app = document.getElementById('app');
+
+function lerEu() { try { return JSON.parse(localStorage.getItem(chave()) || 'null'); } catch (e) { return null; } }
+function salvarEu(v) { try { v ? localStorage.setItem(chave(), JSON.stringify(v)) : localStorage.removeItem(chave()); } catch (e) {} }
+
+
+// ---------- entrada ----------
+function telaCodigo(msg) {
+  app.innerHTML = `${MARCA}
+  <div class="cartao centro surge">
+    <div class="avatar">🌱</div>
+    <h2 style="margin:8px 0 4px">Qual é o código da sala?</h2>
+    <p class="suave">Está no telão, embaixo do QR code.</p>
+    <input class="campo centro" id="cod" maxlength="4" autocapitalize="characters" autocomplete="off" placeholder="ABCD" style="font-size:2rem;letter-spacing:8px;text-transform:uppercase">
+    <p class="erro-msg">${esc(msg || '')}</p>
+    <button class="btn" id="ir">Continuar</button>
+  </div>`;
+  const ir = () => { const c = document.getElementById('cod').value.toUpperCase().trim(); if (c.length === 4) location.search = '?sala=' + c; };
+  document.getElementById('ir').onclick = ir;
+  document.getElementById('cod').onkeydown = (e) => e.key === 'Enter' && ir();
+}
+
+function telaNome(msg) {
+  const andamento = ESTADO && ESTADO.fase && ESTADO.fase !== 'lobby';
+  app.innerHTML = `<div class="logo-grande surge">${LOGO}<h1>Copa Botânica</h1><small>Marista Asa Sul · 2026</small></div>
+  <div class="cartao centro surge">
+    <div class="trilha">🌱<i>›</i>🌿<i>›</i>🌲<i>›</i>🌸<i>›</i>🍎</div>
+    <h1 style="margin:10px 0 6px;font-size:1.7rem">Entra na arena 🌿</h1>
+    <p class="suave" style="margin:0 0 14px">Vença duelos de botânica e evolua de <b>musgo</b> até <b>planta com fruto</b>. Quem perde vira torcida e ainda pode voltar na <b>repescagem</b>.</p>
+    ${andamento ? `<p class="fogo" style="color:#b25d00">A Copa já começou: você entra como torcida 📣</p>` : ''}
+    <input class="campo" id="nome" maxlength="60" autocomplete="name" placeholder="Seu nome completo">
+    <p class="erro-msg" id="erro">${esc(msg || '')}</p>
+    <button class="btn" id="entrar">Entrar 🌱</button>
+    <p class="suave pequeno" style="margin:12px 0 0">Sala <b>${esc(SALA)}</b> · use o nome que está na chamada</p>
+  </div>`;
+  const campo = document.getElementById('nome'), bt = document.getElementById('entrar');
+  const enviar = async () => {
+    const nome = campo.value.replace(/\s+/g, ' ').trim();
+    if (nome.split(' ').length < 2) { document.getElementById('erro').textContent = 'Coloque nome e sobrenome 🙂'; return; }
+    bt.disabled = true; bt.textContent = 'Entrando…';
+    try {
+      const r = await rpc('entrar', { p_codigo: SALA, p_nome: nome });
+      EU = { token: r.token, id: String(r.id), nome: r.nome }; salvarEu(EU);
+      som('entrou'); vibrar(40); iniciar();
+    } catch (e) { document.getElementById('erro').textContent = e.message; bt.disabled = false; bt.textContent = 'Entrar 🌱'; }
+  };
+  bt.onclick = enviar; campo.onkeydown = (e) => e.key === 'Enter' && enviar();
+  setTimeout(() => campo.focus(), 300);
+}
+
+// ---------- sincronização ----------
+let iniciado = false;
+function iniciar() {
+  if (iniciado) { consultar(); return; }
+  iniciado = true;
+  assinarSala(SALA, (linha) => receber(linha.estado, linha.versao));
+  consultar();
+  setInterval(consultar, 4000);
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && consultar());
+}
+async function consultar() {
+  const t0 = Date.now();
+  try {
+    const d = await rpc('ver_jogo', { p_codigo: SALA, p_token: EU ? EU.token : null });
+    ajustarRelogio(d.agora, t0);
+    if (EU && !d.eu) { salvarEu(null); EU = null; ESTADO = d.estado; telaNome('Sua entrada expirou, entre de novo.'); return; }
+    if (d.eu && d.eu.removido) { app.innerHTML = `${MARCA}<div class="cartao centro"><h2>Você foi removido da sala pelo professor.</h2><p class="suave">Se foi engano, fale com o professor e entre de novo com seu nome completo.</p><button class="btn" onclick="localStorage.removeItem('${chave()}');location.reload()">Entrar de novo</button></div>`; return; }
+    if (d.minha_resposta !== null && d.minha_resposta !== undefined && d.estado.ref) MINHAS[d.estado.ref] = d.minha_resposta;
+    receber(d.estado, d.versao);
+  } catch (e) { /* rede instável: tenta de novo no próximo ciclo */ }
+}
+function receber(estado, versao) {
+  if (versao !== undefined && versao < VERSAO) return;
+  if (versao !== undefined) VERSAO = versao;
+  ESTADO = estado || {};
+  desenhar();
+}
+
+// ---------- telas do jogo ----------
+function meuDuelo() { return (ESTADO.duelos || []).find((d) => d.a === EU.id || d.b === EU.id); }
+function oponente(d) { if (!d || !d.b) return null; const id = d.a === EU.id ? d.b : d.a; return { id, ...(ESTADO.j[id] || { n: '?' }) }; }
+function meuPlacar(d) { return d.a === EU.id ? [d.pa, d.pb] : [d.pb, d.pa]; }
+
+function trilha(n) {
+  return `<div class="trilha">${ESTAGIOS.slice(0, 5).map((s, i) => `<span class="${i > n ? 'apagado' : ''}">${s.e}</span>`).join('<i>›</i>')}</div>`;
+}
+
+function miniDuelo(d) {
+  if (!d) return `<div class="mini-duelo"><span>🌻 Torcida</span><span class="pl">${(ESTADO.j[EU.id] || {}).p || 0} 🌼</span></div>`;
+  if (!d.b) return `<div class="mini-duelo"><span>🌰 Passe livre nesta rodada</span></div>`;
+  const op = oponente(d), [m, o] = meuPlacar(d);
+  return `<div class="mini-duelo"><span>Você</span><span class="pl">${m} × ${o}</span><span style="text-align:right">${esc(curto(op.n))} ${estagio(op.e).e}</span></div>`;
+}
+
+function desenhar() {
+  if (!EU) { telaNome(); return; }
+  const e = ESTADO, eu = (e.j || {})[EU.id];
+  const fase = e.fase || 'lobby';
+  let html = '';
+  const telaChave = `${fase}|${e.ref || ''}|${e.rodada || 0}`;
+  const mudouTela = telaChave !== ultimaTela;
+
+  if (fase === 'lobby' || !eu) {
+    const ids = Object.keys(e.j || {});
+    const ultimos = ids.slice(-10).reverse().map((id) => e.j[id]).filter(Boolean);
+    html = `${MARCA}
+    <div class="cartao centro surge">
+      <div class="avatar grande pulsa">🌱</div>
+      <h2 style="margin-top:8px">Tá dentro, ${esc(primeiroNome(EU.nome))}! 🌿</h2>
+      <p class="suave">Fica de olho no telão: quando a sala fechar, sai o seu adversário.</p>
+      ${trilha(0)}
+      <p class="suave pequeno">Cada vitória = uma novidade evolutiva. Chegue à planta com fruto!</p>
+    </div>
+    <div class="centro"><h3 class="claro">${ids.length || 1} botânico${ids.length === 1 ? '' : 's'} na sala</h3></div>
+    <div class="chips">${ultimos.map((p) => `<span class="chip">🌱 ${esc(curto(p.n))}</span>`).join('')}</div>
+    <button class="btn sec" data-acao="convidar">🌱 Chamar a galera</button>
+    <div class="cartao"><b>🪴 Curiosidade</b><p style="margin:6px 0 0" id="fato">${esc(FATOS[Math.floor(Date.now() / 8000) % FATOS.length])}</p></div>`;
+  } else if (fase === 'chave') {
+    const d = meuDuelo(), op = oponente(d);
+    const rebrotei = e.evento && e.evento.tipo === 'repescagem' && e.evento.id === EU.id;
+    if (!d) html = telaTorcida('Rodada ' + e.rodada + ' vai começar');
+    else if (!d.b) html = `${MARCA}<div class="cartao centro surge"><div class="avatar grande">🌰</div><h2>Semente dormente: passe livre!</h2><p class="suave">Número ímpar de jogadores: nesta rodada você avança direto. Responda mesmo assim para somar pólen 🌼.</p></div>`;
+    else html = `${MARCA}
+      ${rebrotei ? `<div class="cartao centro surge"><div class="avatar">🌱🌧️</div><h2>VOCÊ REBROTOU!</h2><p class="suave">Foi o melhor da torcida em pólen e voltou para a Copa pela repescagem.</p></div>` : ''}
+      <div class="centro"><span class="tema">Rodada ${e.rodada}${e.k === 5 ? ' · GRANDE FINAL' : ''}</span></div>
+      <div class="cartao surge">
+        <div class="duelo">
+          <div class="lado"><div class="avatar">${estagio(eu.e).e}</div><div class="nome">${esc(primeiroNome(eu.n))}</div><div class="suave pequeno">${estagio(eu.e).nome}</div></div>
+          <div class="vs">VS</div>
+          <div class="lado"><div class="avatar">${estagio(op.e).e}</div><div class="nome">${esc(primeiroNome(op.n))}</div><div class="suave pequeno">${esc(curto(op.n))}</div></div>
+        </div>
+      </div>
+      <p class="centro claro">Melhor de ${e.k} perguntas. Empatou? <b>Morte súbita</b> ⚡</p>
+      <p class="centro suave pequeno" style="color:#ffffff99">Responder certo e rápido também vale pólen 🌼 para o ranking geral.</p>`;
+  } else if (fase === 'preparar') {
+    html = `${MARCA}${miniDuelo(meuDuelo())}
+      <div class="cartao centro surge" style="padding:36px 18px">
+        <h2>${e.morte_subita ? '⚡ MORTE SÚBITA' : `Pergunta ${e.q_num + 1} de ${e.k}`}</h2>
+        ${e.morte_subita ? '<p class="suave">Quem acertar (e mais rápido) leva o duelo!</p>' : ''}
+        <div class="contagem" data-fim="${ms(e.prep_fim)}">3</div>
+        <p class="suave">Foco total 🌱</p>
+      </div>`;
+  } else if (fase === 'pergunta') {
+    const minha = MINHAS[e.ref];
+    const d = meuDuelo(), op = oponente(d);
+    const opRespondeu = op && (e.respondidos || []).includes(op.id);
+    const valeDuelo = d && d.b && !d.w;
+    html = `${MARCA}${miniDuelo(d)}
+      <div class="barra-tempo" data-ini="${ms(e.q_inicio)}" data-fim="${ms(e.q_fim)}"></div>
+      <div class="cartao"><span class="tema">${esc(e.q.tema)}</span>${e.morte_subita ? ' <span class="tema" style="background:var(--sol)">⚡ morte súbita</span>' : ''}
+        <div class="enunciado">${esc(e.q.texto)}</div></div>
+      <div class="opcoes">${e.q.opcoes.map((t, i) => `<button class="op op${i} ${minha !== undefined ? (minha === i ? 'escolhida' : 'apagada') : ''}" data-op="${i}" ${minha !== undefined ? 'disabled' : ''}><span class="letra">${LETRAS[i]}</span><span>${esc(t)}</span></button>`).join('')}</div>
+      <p class="centro claro">${minha !== undefined ? '🌱 Resposta plantada! Espera o tempo acabar…' : ''}
+        ${valeDuelo && opRespondeu && minha === undefined ? `🍃 <b>${esc(primeiroNome(op.n))} já respondeu!</b>` : ''}
+        ${d && d.w && d.b ? 'Seu duelo já está decidido: agora vale pólen 🌼' : ''}</p>
+      ${avisoTemp ? `<p class="centro erro-msg">${esc(avisoTemp)}</p>` : ''}`;
+  } else if (fase === 'revelacao') {
+    const rv = e.revelacao || {}, minha = MINHAS[e.ref];
+    const certo = minha === rv.correta;
+    const d = meuDuelo();
+    const titulo = minha === undefined ? '<span class="ruim">🍂 O tempo secou</span>' : certo ? `<span class="bom">🌿 Mandou bem! +${eu.g || 0} 🌼</span>` : '<span class="ruim">🥀 Murchou… errou</span>';
+    if (mudouTela) { if (certo) { som('certo'); vibrar(60); } else { som('errado'); vibrar([80, 60, 80]); } }
+    html = `${MARCA}${miniDuelo(d)}
+      <div class="cartao centro surge"><div class="resultado">${titulo}</div>
+        ${eu.s >= 2 ? `<div class="fogo" style="margin-top:8px">🔥 ${eu.s} seguidas</div>` : ''}</div>
+      <div class="cartao">
+        <p class="suave pequeno" style="margin:0 0 6px">Resposta certa:</p>
+        <div class="op op${rv.correta} certa" style="box-shadow:none"><span class="letra">${LETRAS[rv.correta]}</span><span>${esc((e.q.opcoes || [])[rv.correta])}</span></div>
+        ${rv.explicacao ? `<div class="explica" style="margin-top:12px"><b>Por quê?</b> ${esc(rv.explicacao)}</div>` : ''}
+        <p class="suave pequeno centro" style="margin:10px 0 0">${rv.total ? Math.round(100 * (rv.stats[rv.correta] || 0) / rv.total) : 0}% da sala acertou</p>
+      </div>`;
+  } else if (fase === 'fim_rodada') {
+    const d = meuDuelo();
+    if (d && d.w === EU.id) {
+      const s = estagio(eu.e);
+      if (mudouTela) { som('fanfarra'); vibrar([60, 40, 60, 40, 120]); setTimeout(() => confete(2.5), 200); }
+      html = `${MARCA}<div class="cartao centro surge">
+        <p class="suave" style="margin:0">Você venceu ${d.b ? 'o duelo' : '(passe livre)'} e EVOLUIU!</p>
+        <div class="avatar grande pulsa" style="margin:10px 0">${s.e}</div>
+        <h2>${s.nome}</h2><p style="font-weight:800">${s.ganho}</p>${trilha(eu.e)}</div>
+        <p class="centro claro">Próxima rodada já já. Restam <b>${Object.values(ESTADO.j).filter((p) => p.v).length}</b> na disputa.</p>`;
+    } else html = telaTorcida(d ? 'Você perdeu este duelo…' : 'Fim da rodada', !!d);
+  } else if (fase === 'campeao') {
+    const rk = ranking(e), pos = rk.findIndex((p) => p.id === EU.id) + 1, camp = e.j[e.campeao] || {};
+    const souEu = e.campeao === EU.id;
+    if (mudouTela) { if (souEu) { som('fanfarra'); confete(8); vibrar([100, 50, 100, 50, 300]); } else confete(3); }
+    const s = estagio(eu.e);
+    html = `${MARCA}
+      <div class="cartao centro surge">
+        ${souEu ? `<div class="avatar grande pulsa">🏆</div><h1>🌻 VOCÊ É O CAMPEÃO BOTÂNICO!</h1>` : `<p class="suave" style="margin:0">Campeão botânico</p><div class="avatar">🏆</div><h2>${esc(camp.n)}</h2>`}
+      </div>
+      <div class="cartao centro">
+        <p class="suave" style="margin:0">Sua jornada</p>
+        <div class="avatar" style="margin:8px 0">${s.e}</div>
+        <h2>Chegou a ${s.nome}</h2>
+        <p><b>${eu.p} 🌼 pólen</b> · ${eu.a} acerto${eu.a === 1 ? '' : 's'} · <b>${pos}º</b> de ${rk.length} no ranking</p>
+        <button class="btn" data-acao="resultado">🌸 Postar meu resultado</button>
+      </div>
+      <div class="cartao"><h3 style="margin-bottom:8px">🌼 Top 5 em pólen</h3><ol class="lista-rank">${rk.slice(0, 5).map((p, i) => `<li class="${p.id === EU.id ? 'eu' : ''}" style="background:#0f2e1d0d"><span class="pos">${i + 1}º</span><span>${estagio(p.e).e} ${esc(curto(p.n))}</span><span class="pts" style="color:#2f7a4a">${p.p}</span></li>`).join('')}</ol></div>`;
+  }
+  html += `<div class="rodape">Sala ${esc(SALA)} · ${esc(EU.nome)}</div>`;
+  if (mudouTela) ultimaTela = telaChave;
+  if (html !== ultimoHtml) { app.innerHTML = html; ultimoHtml = html; if (mudouTela) window.scrollTo(0, 0); }
+}
+
+function telaTorcida(titulo, acabeiDePerder) {
+  const e = ESTADO, eu = e.j[EU.id];
+  const torcida = ranking(e).filter((p) => !p.v && p.el);
+  const pos = torcida.findIndex((p) => p.id === EU.id) + 1;
+  return `${MARCA}<div class="cartao centro surge">
+    <div class="avatar">🌻</div><h2>${esc(titulo)}</h2>
+    <p>${acabeiDePerder ? 'Mas ainda não acabou! ' : ''}Você está na <b>torcida</b>: continue respondendo para ganhar pólen 🌼.</p>
+    ${eu.el ? `<p class="suave">Se o número de classificados ficar ímpar, <b>o melhor da torcida em pólen volta</b> pela repescagem.${pos ? ` Você está em <b>${pos}º</b> na torcida.` : ''}</p>` : '<p class="suave">Você entrou com o torneio em andamento: está jogando pelo ranking de pólen.</p>'}
+    <p style="font-weight:800">${eu.p} 🌼 · ${estagio(eu.e).e} ${estagio(eu.e).nome}</p></div>`;
+}
+
+// ---------- ações ----------
+document.addEventListener('click', async (ev) => {
+  const op = ev.target.closest('[data-op]');
+  if (op && ESTADO && ESTADO.fase === 'pergunta') {
+    const ref = ESTADO.ref, i = +op.dataset.op;
+    if (MINHAS[ref] !== undefined) return;
+    MINHAS[ref] = i; vibrar(30); avisoTemp = ''; desenhar();
+    try { await rpc('responder', { p_token: EU.token, p_ref: ref, p_opcao: i }); }
+    catch (e) { if (!/esgotado/i.test(e.message)) delete MINHAS[ref]; avisoTemp = e.message; desenhar(); }
+    return;
+  }
+  const ac = ev.target.closest('[data-acao]');
+  if (!ac) return;
+  const link = `${location.origin}/?sala=${SALA}`;
+  let texto = '';
+  if (ac.dataset.acao === 'convidar') texto = `Entra na Copa Botânica do Marista Asa Sul! Sala ${SALA} 🌱⚔️`;
+  if (ac.dataset.acao === 'resultado') {
+    const eu = ESTADO.j[EU.id], s = estagio(eu.e);
+    texto = ESTADO.campeao === EU.id
+      ? `🏆 Fui CAMPEÃO da Copa Botânica Marista Asa Sul 2026! ${eu.p} 🌼 de pólen. Duvido você me vencer em botânica 🌵`
+      : `Cheguei a ${s.e} ${s.nome} na Copa Botânica Marista Asa Sul 2026 com ${eu.p} 🌼 de pólen. Duvido chegar mais longe 🌵`;
+  }
+  try { if (navigator.share) { await navigator.share({ title: 'Copa Botânica Marista Asa Sul 2026', text: texto, url: link }); return; } } catch (e) { return; }
+  try { await navigator.clipboard.writeText(`${texto} ${link}`); ac.textContent = '🌿 Copiado! Cola no grupo da turma'; } catch (e) {}
+});
+setInterval(() => { const f = document.getElementById('fato'); if (f) f.textContent = FATOS[Math.floor(Date.now() / 8000) % FATOS.length]; }, 1000);
+
+document.getElementById('polen').innerHTML = Array.from({length: 14}, (_, i) => `<i style="left:${(i*37)%100}%;animation-duration:${9+(i%5)*3}s;animation-delay:${-(i*1.7)}s;width:${4+(i%3)*2}px;height:${4+(i%3)*2}px"></i>`).join('');
+
+// ---------- início ----------
+(async function () {
+  if (!SALA) { telaCodigo(); return; }
+  EU = lerEu();
+  try {
+    const t0 = Date.now();
+    const d = await rpc('ver_jogo', { p_codigo: SALA, p_token: EU ? EU.token : null });
+    ajustarRelogio(d.agora, t0); ESTADO = d.estado;
+    if (EU && !d.eu) { salvarEu(null); EU = null; }
+  } catch (e) { telaCodigo(e.message); return; }
+  if (!EU) telaNome(); else iniciar();
+})();
+</script>
+</body>
+</html>
