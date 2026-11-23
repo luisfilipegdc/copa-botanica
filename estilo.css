@@ -157,3 +157,10 @@ a { color: inherit; }
 .logo-grande .logo { width: 150px; height: 158px; filter: drop-shadow(0 8px 16px rgba(0,0,0,.35)); }
 .logo-grande h1 { font-size: 1.9rem; color: var(--papel); }
 .logo-grande small { font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--broto); font-size: .8rem; }
+
+/* app instalado: tela cheia, respeitando o entalhe do celular */
+.dica-ios { text-align: center; font-size: .9rem; color: var(--broto); background: #ffffff10; border: 1px dashed #a8d67266; border-radius: 4px 14px 4px 14px; padding: 10px 12px; margin: 0; }
+@media (display-mode: standalone) {
+  body { overscroll-behavior-y: none; -webkit-user-select: none; user-select: none; }
+  input, textarea { -webkit-user-select: text; user-select: text; }
+}

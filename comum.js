@@ -137,3 +137,23 @@ const LOGO = `<svg class="logo" viewBox="0 0 200 210" role="img" aria-label="Cop
   <text x="100" y="136" text-anchor="middle" font-family="Fredoka, Nunito, sans-serif" font-weight="600" font-size="21" letter-spacing="2" fill="#3a2a00">BOTÂNICA</text>
 </svg>`;
 const MARCA = `<div class="marca">${LOGO}<div><b>Copa Botânica</b><small>Marista Asa Sul · 2026</small></div></div>`;
+
+// ---------- App instalável (PWA) ----------
+if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+let PEDIDO_INSTALAR = null;
+const EH_APP = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const EH_IOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !/crios|fxios/i.test(navigator.userAgent);
+addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); PEDIDO_INSTALAR = e; document.dispatchEvent(new Event('instalavel')); });
+addEventListener('appinstalled', () => { PEDIDO_INSTALAR = null; document.dispatchEvent(new Event('instalavel')); });
+function botaoInstalar() {
+  if (EH_APP) return '';
+  if (PEDIDO_INSTALAR) return '<button class="btn sec" data-instalar>📲 Instalar o app da Copa</button>';
+  if (EH_IOS) return '<p class="dica-ios">📲 Quer o app? Toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.</p>';
+  return '';
+}
+document.addEventListener('click', async (e) => {
+  if (!e.target.closest('[data-instalar]') || !PEDIDO_INSTALAR) return;
+  PEDIDO_INSTALAR.prompt();
+  try { await PEDIDO_INSTALAR.userChoice; } catch (er) {}
+  PEDIDO_INSTALAR = null; document.dispatchEvent(new Event('instalavel'));
+});

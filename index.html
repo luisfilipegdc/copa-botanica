@@ -3,12 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f2e1d">
 <title>Copa Botânica · Marista Asa Sul 2026</title>
 <meta name="description" content="Duelos de botânica: evolua de musgo a árvore centenária respondendo perguntas.">
 <meta property="og:title" content="Copa Botânica · Marista Asa Sul 2026 🌳">
 <meta property="og:description" content="Duelos de botânica ao vivo. Vença e evolua: musgo → samambaia → pinheiro → flor → fruto.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌳</text></svg>">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="/icones/favicon-32.png">
+<link rel="apple-touch-icon" href="/icones/apple-touch-icon.png">
+<meta name="theme-color" content="#0c2617">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Copa Botânica">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="estilo.css">
@@ -28,6 +35,8 @@ const MINHAS = {};          // ref -> opção escolhida
 let ultimoHtml = '', ultimaTela = '', avisoTemp = '';
 const app = document.getElementById('app');
 
+function ultimaSala() { try { return localStorage.getItem('tb_ultima_sala') || ''; } catch (e) { return ''; } }
+document.addEventListener('instalavel', () => { if (!SALA) telaCodigo(); else if (EU && ESTADO) { ultimoHtml = ''; desenhar(); } });
 function lerEu() { try { return JSON.parse(localStorage.getItem(chave()) || 'null'); } catch (e) { return null; } }
 function salvarEu(v) { try { v ? localStorage.setItem(chave(), JSON.stringify(v)) : localStorage.removeItem(chave()); } catch (e) {} }
 
@@ -39,10 +48,10 @@ function telaCodigo(msg) {
     <div class="avatar">🌱</div>
     <h2 style="margin:8px 0 4px">Qual é o código da sala?</h2>
     <p class="suave">Está no telão, embaixo do QR code.</p>
-    <input class="campo centro" id="cod" maxlength="4" autocapitalize="characters" autocomplete="off" placeholder="ABCD" style="font-size:2rem;letter-spacing:8px;text-transform:uppercase">
+    <input class="campo centro" id="cod" maxlength="4" autocapitalize="characters" autocomplete="off" placeholder="ABCD" value="${esc(ultimaSala())}" style="font-size:2rem;letter-spacing:8px;text-transform:uppercase">
     <p class="erro-msg">${esc(msg || '')}</p>
     <button class="btn" id="ir">Continuar</button>
-  </div>`;
+  </div>${botaoInstalar()}`;
   const ir = () => { const c = document.getElementById('cod').value.toUpperCase().trim(); if (c.length === 4) location.search = '?sala=' + c; };
   document.getElementById('ir').onclick = ir;
   document.getElementById('cod').onkeydown = (e) => { if (e.key === 'Enter') ir(); };
@@ -69,6 +78,7 @@ function telaNome(msg) {
     try {
       const r = await rpc('entrar', { p_codigo: SALA, p_nome: nome });
       EU = { token: r.token, id: String(r.id), nome: r.nome }; salvarEu(EU);
+      try { localStorage.setItem('tb_ultima_sala', SALA); } catch (e) {}
       som('entrou'); vibrar(40); iniciar();
     } catch (e) { document.getElementById('erro').textContent = e.message; bt.disabled = false; bt.textContent = 'Entrar 🌱'; }
   };
@@ -142,6 +152,7 @@ function desenhar() {
     <div class="centro"><h3 class="claro">${ids.length || 1} botânico${ids.length === 1 ? '' : 's'} na sala</h3></div>
     <div class="chips">${ultimos.map((p) => `<span class="chip">🌱 ${esc(curto(p.n))}</span>`).join('')}</div>
     <button class="btn sec" data-acao="convidar">🌱 Chamar a galera</button>
+    ${botaoInstalar()}
     <div class="cartao"><b>🪴 Curiosidade</b><p style="margin:6px 0 0" id="fato">${esc(FATOS[Math.floor(Date.now() / 8000) % FATOS.length])}</p></div>`;
   } else if (fase === 'chave') {
     const d = meuDuelo(), op = oponente(d);
